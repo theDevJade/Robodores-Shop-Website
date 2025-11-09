@@ -6,7 +6,7 @@ Full-stack web portal for attendance scanning, CNC/3DP job intake, inventory tra
 - Role-based access (student/lead/admin) with JWT auth.
 - USB barcode attendance kiosk with schedule enforcement and warnings.
 - CNC & 3D-print job submissions with file uploads and status tracking.
-- Google Sheets integration for order requests.
+- .csv file exportation for all data.
 - Inventory catalog with quantity adjustments + change history.
 
 ## Local testing (Docker Compose)
