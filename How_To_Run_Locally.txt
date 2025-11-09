@@ -1,0 +1,10 @@
+
+You must have Docker installed first.
+
+Run these commands in powershell
+
+cd "Parent folder of program"
+
+then run "copy backend\.env.example backend\.env "       
+
+then run "docker compose up --build"

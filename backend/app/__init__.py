@@ -1,0 +1,1 @@
+"""Robotics shop portal backend."""
