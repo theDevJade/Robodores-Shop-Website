@@ -69,6 +69,31 @@ def init_db() -> None:
         inventory_names = {row[1] for row in inventory_cols}
         if "vendor_link" not in inventory_names:
             conn.execute(text("ALTER TABLE inventoryitem ADD COLUMN vendor_link VARCHAR"))
+        manuf_cols = conn.execute(text("PRAGMA table_info('manufacturingpart')")).fetchall()
+        manuf_names = {row[1] for row in manuf_cols}
+        if manuf_cols:
+            if "student_eta_minutes" not in manuf_names:
+                conn.execute(text("ALTER TABLE manufacturingpart ADD COLUMN student_eta_minutes INTEGER"))
+            if "eta_note" not in manuf_names:
+                conn.execute(text("ALTER TABLE manufacturingpart ADD COLUMN eta_note VARCHAR"))
+            if "eta_updated_at" not in manuf_names:
+                conn.execute(text("ALTER TABLE manufacturingpart ADD COLUMN eta_updated_at DATETIME"))
+            if "eta_by_id" not in manuf_names:
+                conn.execute(text("ALTER TABLE manufacturingpart ADD COLUMN eta_by_id INTEGER"))
+            if "eta_target" not in manuf_names:
+                conn.execute(text("ALTER TABLE manufacturingpart ADD COLUMN eta_target DATETIME"))
+            if "actual_start" not in manuf_names:
+                conn.execute(text("ALTER TABLE manufacturingpart ADD COLUMN actual_start DATETIME"))
+            if "actual_complete" not in manuf_names:
+                conn.execute(text("ALTER TABLE manufacturingpart ADD COLUMN actual_complete DATETIME"))
+            if "cad_file_name" not in manuf_names:
+                conn.execute(text("ALTER TABLE manufacturingpart ADD COLUMN cad_file_name VARCHAR"))
+            if "cad_file_path" not in manuf_names:
+                conn.execute(text("ALTER TABLE manufacturingpart ADD COLUMN cad_file_path VARCHAR"))
+            if "cam_file_name" not in manuf_names:
+                conn.execute(text("ALTER TABLE manufacturingpart ADD COLUMN cam_file_name VARCHAR"))
+            if "cam_file_path" not in manuf_names:
+                conn.execute(text("ALTER TABLE manufacturingpart ADD COLUMN cam_file_path VARCHAR"))
     if recreated_attendance:
         SQLModel.metadata.create_all(engine)
     with Session(engine) as session:

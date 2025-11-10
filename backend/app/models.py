@@ -1,6 +1,7 @@
 from __future__ import annotations
 from datetime import datetime, time
 from enum import Enum
+from sqlalchemy import Column, JSON
 from sqlmodel import Field, SQLModel
 
 class Role(str, Enum):
@@ -25,6 +26,23 @@ class JobStatus(str, Enum):
 class ShopType(str, Enum):
     cnc = "cnc"
     printing = "printing"
+
+class ManufacturingType(str, Enum):
+    cnc = "cnc"
+    printing = "printing"
+    manual = "manual"
+
+class ManufacturingStatus(str, Enum):
+    design_submitted = "design_submitted"
+    ready_for_manufacturing = "ready_for_manufacturing"
+    in_progress = "in_progress"
+    quality_check = "quality_check"
+    completed = "completed"
+
+class ManufacturingPriority(str, Enum):
+    low = "low"
+    normal = "normal"
+    urgent = "urgent"
 
 class OrderStatus(str, Enum):
     pending = "pending"
@@ -121,6 +139,57 @@ class InventoryTransaction(SQLModel, table=True):
     performed_by: int | None = Field(default=None, foreign_key="user.id")
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
+class ManufacturingPart(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    part_name: str = Field(index=True)
+    subsystem: str = Field(index=True)
+    material: str
+    quantity: int = Field(default=1)
+    manufacturing_type: ManufacturingType = Field(index=True)
+    cad_link: str
+    cam_link: str | None = None
+    cam_student: str | None = None
+    cnc_operator: str | None = None
+    material_stock: str | None = None
+    printer_assignment: str | None = None
+    slicer_profile: str | None = None
+    filament_type: str | None = None
+    tool_type: str | None = None
+    dimensions: str | None = None
+    responsible_student: str | None = None
+    notes: str | None = None
+    priority: ManufacturingPriority = Field(default=ManufacturingPriority.normal, index=True)
+    status: ManufacturingStatus = Field(default=ManufacturingStatus.design_submitted, index=True)
+    created_by_id: int = Field(foreign_key="user.id")
+    created_by_name: str
+    approved_by_id: int | None = Field(default=None, foreign_key="user.id")
+    approved_at: datetime | None = None
+    status_locked: bool = Field(default=False, index=True)
+    lock_reason: str | None = None
+    lane_position: int = Field(default=0, index=True)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow, index=True)
+    last_status_change: datetime = Field(default_factory=datetime.utcnow)
+    assigned_student_ids: list[int] = Field(
+        default_factory=list,
+        sa_column=Column(JSON, nullable=False, default=list),
+    )
+    assigned_lead_ids: list[int] = Field(
+        default_factory=list,
+        sa_column=Column(JSON, nullable=False, default=list),
+    )
+    student_eta_minutes: int | None = None
+    eta_note: str | None = None
+    eta_updated_at: datetime | None = None
+    eta_by_id: int | None = Field(default=None, foreign_key="user.id")
+    eta_target: datetime | None = None
+    actual_start: datetime | None = None
+    actual_complete: datetime | None = None
+    cad_file_name: str | None = None
+    cad_file_path: str | None = None
+    cam_file_name: str | None = None
+    cam_file_path: str | None = None
+
 
 class TicketType(str, Enum):
     feature = "feature"
@@ -154,6 +223,7 @@ class Ticket(SQLModel, table=True):
 
 class SheetSection(str, Enum):
     attendance = "attendance"
+    manufacturing = "manufacturing"
     cnc = "cnc"
     printing = "printing"
     orders = "orders"

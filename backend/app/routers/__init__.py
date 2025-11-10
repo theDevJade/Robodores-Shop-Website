@@ -1,5 +1,16 @@
 """Router package exports."""
-from . import auth, attendance, exports, inventory, jobs, orders, schedules, settings, tickets
+from . import (
+    auth,
+    attendance,
+    exports,
+    inventory,
+    jobs,
+    manufacturing,
+    orders,
+    schedules,
+    settings,
+    tickets,
+)
 
 __all__ = [
     "auth",
@@ -7,6 +18,7 @@ __all__ = [
     "exports",
     "inventory",
     "jobs",
+    "manufacturing",
     "orders",
     "schedules",
     "settings",

@@ -1,5 +1,5 @@
 from datetime import datetime
-from pydantic import BaseModel, EmailStr, HttpUrl
+from pydantic import BaseModel, EmailStr, Field, HttpUrl
 from typing import Optional
 
 class Token(BaseModel):
@@ -219,3 +219,127 @@ class TicketRead(BaseModel):
 
 class TicketUpdate(BaseModel):
     status: str
+
+class ManufacturingAssignment(BaseModel):
+    id: int
+    name: str
+    role: str
+
+class ManufacturingPartCreate(BaseModel):
+    part_name: str
+    subsystem: str
+    material: str
+    quantity: int = Field(gt=0)
+    manufacturing_type: str
+    cad_link: str
+    priority: str = "normal"
+    notes: str | None = None
+    material_stock: str | None = None
+    cam_link: str | None = None
+    cam_student: str | None = None
+    cnc_operator: str | None = None
+    printer_assignment: str | None = None
+    slicer_profile: str | None = None
+    filament_type: str | None = None
+    tool_type: str | None = None
+    dimensions: str | None = None
+    responsible_student: str | None = None
+    assigned_student_ids: list[int] = Field(default_factory=list)
+    assigned_lead_ids: list[int] = Field(default_factory=list)
+
+class ManufacturingPartUpdate(BaseModel):
+    part_name: str | None = None
+    subsystem: str | None = None
+    material: str | None = None
+    quantity: int | None = None
+    manufacturing_type: str | None = None
+    cad_link: str | None = None
+    priority: str | None = None
+    notes: str | None = None
+    material_stock: str | None = None
+    cam_link: str | None = None
+    cam_student: str | None = None
+    cnc_operator: str | None = None
+    printer_assignment: str | None = None
+    slicer_profile: str | None = None
+    filament_type: str | None = None
+    tool_type: str | None = None
+    dimensions: str | None = None
+    responsible_student: str | None = None
+    assigned_student_ids: list[int] | None = None
+    assigned_lead_ids: list[int] | None = None
+    status_locked: bool | None = None
+    lock_reason: str | None = None
+
+class ManufacturingStatusUpdate(BaseModel):
+    status: str
+    note: str | None = None
+
+class ManufacturingPartRead(BaseModel):
+    id: int
+    part_name: str
+    subsystem: str
+    material: str
+    quantity: int
+    manufacturing_type: str
+    cad_link: str
+    cam_link: str | None
+    cam_student: str | None
+    cnc_operator: str | None
+    material_stock: str | None
+    printer_assignment: str | None
+    slicer_profile: str | None
+    filament_type: str | None
+    tool_type: str | None
+    dimensions: str | None
+    responsible_student: str | None
+    notes: str | None
+    priority: str
+    status: str
+    status_label: str
+    status_locked: bool
+    lock_reason: str | None
+    created_at: datetime
+    updated_at: datetime
+    last_status_change: datetime
+    created_by: ManufacturingAssignment
+    approved_by: ManufacturingAssignment | None
+    assigned_students: list[ManufacturingAssignment]
+    assigned_leads: list[ManufacturingAssignment]
+    can_edit: bool
+    can_move: bool
+    can_assign: bool
+    student_eta_minutes: int | None = None
+    eta_note: str | None = None
+    eta_updated_at: datetime | None = None
+    eta_by: ManufacturingAssignment | None = None
+    eta_target: datetime | None = None
+    actual_start: datetime | None = None
+    actual_complete: datetime | None = None
+    cad_file_name: str | None = None
+    cad_file_url: str | None = None
+    cam_file_name: str | None = None
+    cam_file_url: str | None = None
+
+class ManufacturingSummary(BaseModel):
+    total: int
+    urgent: int
+    by_status: dict[str, int]
+
+class ManufacturingLookupUser(BaseModel):
+    id: int
+    name: str
+    role: str
+
+class ManufacturingLookupResponse(BaseModel):
+    users: list[ManufacturingLookupUser]
+
+class ManufacturingClaimInput(BaseModel):
+    eta_minutes: int | None = Field(default=None, ge=0)
+    eta_note: str | None = None
+    eta_target: datetime | None = None
+
+class ManufacturingEtaUpdate(BaseModel):
+    eta_minutes: int = Field(ge=0)
+    eta_note: str | None = None
+    eta_target: datetime | None = None
