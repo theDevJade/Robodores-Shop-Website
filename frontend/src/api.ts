@@ -1,6 +1,25 @@
 import axios, { AxiosRequestHeaders } from "axios";
 
-export const API_BASE = (import.meta as any).env.VITE_API_URL ?? "http://localhost:8000";
+const ENV_BASE = (import.meta as any).env.VITE_API_URL as string | undefined;
+
+function resolveApiBase(): string {
+  const fallback = "http://localhost:8000";
+  let base = ENV_BASE ?? fallback;
+  if (typeof window !== "undefined") {
+    const { protocol, hostname } = window.location;
+    const isLocalHost = hostname === "localhost" || hostname === "127.0.0.1";
+    const envPointsToLoopback = /(^|\/)localhost(?=[:/]|$)|(^|\/)127\.0\.0\.1(?=[:/]|$)/i.test(base);
+    if (!isLocalHost && envPointsToLoopback) {
+      return `${protocol}//${hostname}:8000`;
+    }
+    if ((ENV_BASE ?? "").toLowerCase() === "auto") {
+      return `${protocol}//${hostname}:8000`;
+    }
+  }
+  return base;
+}
+
+export const API_BASE = resolveApiBase();
 
 export const api = axios.create({
   baseURL: API_BASE,

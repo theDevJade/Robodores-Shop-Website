@@ -187,57 +187,59 @@ function TicketQueue({
           Refresh
         </button>
       </div>
-      <table>
-        <thead>
-          <tr>
-            <th>Subject</th>
-            <th>Priority</th>
-            <th>Status</th>
-            <th>Notes</th>
-            <th>Requester</th>
-            <th>Created</th>
-            {canModerate && <th></th>}
-          </tr>
-        </thead>
-        <tbody>
-          {tickets.map((ticket) => (
-            <tr key={ticket.id}>
-              <td>{ticket.subject}</td>
-              <td style={{ textTransform: "capitalize" }}>{ticket.priority}</td>
-              <td>
-                {canModerate ? (
-                  <select value={ticket.status} onChange={(e) => updateStatus(ticket.id, e.target.value)}>
-                    {statusOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <span style={{ textTransform: "capitalize" }}>{ticket.status}</span>
-                )}
-              </td>
-              <td>{ticket.details ? <ViewNoteButton title={ticket.subject} content={ticket.details} /> : "-"}</td>
-              <td>{ticket.requester_name}</td>
-              <td>{dayjs(ticket.created_at).format("MMM D, HH:mm")}</td>
+      <div className="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Subject</th>
+              <th>Priority</th>
+              <th>Status</th>
+              <th>Notes</th>
+              <th>Requester</th>
+              <th>Created</th>
+              {canModerate && <th></th>}
+            </tr>
+          </thead>
+          <tbody>
+            {tickets.map((ticket) => (
+              <tr key={ticket.id}>
+                <td>{ticket.subject}</td>
+                <td style={{ textTransform: "capitalize" }}>{ticket.priority}</td>
+                <td>
+                  {canModerate ? (
+                    <select value={ticket.status} onChange={(e) => updateStatus(ticket.id, e.target.value)}>
+                      {statusOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <span style={{ textTransform: "capitalize" }}>{ticket.status}</span>
+                  )}
+                </td>
+                <td>{ticket.details ? <ViewNoteButton title={ticket.subject} content={ticket.details} /> : "-"}</td>
+                <td>{ticket.requester_name}</td>
+                <td>{dayjs(ticket.created_at).format("MMM D, HH:mm")}</td>
                 {canModerate && (
                   <td className="table-actions">
-                      <button className="danger" onClick={() => setConfirmTicket(ticket)}>
-                        Remove
-                      </button>
-                    </td>
-                  )}
+                    <button className="danger" onClick={() => setConfirmTicket(ticket)}>
+                      Remove
+                    </button>
+                  </td>
+                )}
               </tr>
             ))}
-          {tickets.length === 0 && (
-            <tr>
-              <td colSpan={canModerate ? 7 : 6} style={{ textAlign: "center", opacity: 0.6 }}>
-                No tickets yet.
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+            {tickets.length === 0 && (
+              <tr>
+                <td colSpan={canModerate ? 7 : 6} style={{ textAlign: "center", opacity: 0.6 }}>
+                  No tickets yet.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
       <ConfirmDialog
         open={Boolean(confirmTicket)}
         message={`Delete "${confirmTicket?.subject}" ticket?`}

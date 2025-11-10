@@ -146,33 +146,35 @@ export function InventoryTab({ canEdit }: Props) {
 
       <div className="card" style={{ marginTop: 24 }}>
         <h3>All Parts (A-Z)</h3>
-        <table>
-          <thead><tr><th>Name</th><th>SKU</th><th>Location</th><th>Qty</th><th>Tags</th><th>Vendor</th><th></th></tr></thead>
-          <tbody>
-            {sorted.map((item) => (
-              <tr key={item.id}>
-                <td>{item.part_name}</td>
-                <td>{item.sku ?? "-"}</td>
-                <td>{item.location ?? "-"}</td>
-                <td>{item.quantity}</td>
-                <td>{item.tags ?? "-"}</td>
-                <td>
-                  {item.vendor_link ? (
-                    <a href={item.vendor_link} target="_blank" rel="noreferrer">
-                      Link
-                    </a>
-                  ) : (
-                    "-"
-                  )}
-                </td>
-                <td className="table-actions">
-                  {canEdit && <button onClick={() => remove(item.id)}>Remove</button>}
-                  <button style={{ marginLeft: 8 }} onClick={() => setOrderItem(item)}>Submit Order</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="table-scroll">
+          <table>
+            <thead><tr><th>Name</th><th>SKU</th><th>Location</th><th>Qty</th><th>Tags</th><th>Vendor</th><th></th></tr></thead>
+            <tbody>
+              {sorted.map((item) => (
+                <tr key={item.id}>
+                  <td>{item.part_name}</td>
+                  <td>{item.sku ?? "-"}</td>
+                  <td>{item.location ?? "-"}</td>
+                  <td>{item.quantity}</td>
+                  <td>{item.tags ?? "-"}</td>
+                  <td>
+                    {item.vendor_link ? (
+                      <a href={item.vendor_link} target="_blank" rel="noreferrer">
+                        Link
+                      </a>
+                    ) : (
+                      "-"
+                    )}
+                  </td>
+                  <td className="table-actions">
+                    {canEdit && <button onClick={() => remove(item.id)}>Remove</button>}
+                    <button style={{ marginLeft: 8 }} onClick={() => setOrderItem(item)}>Submit Order</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </section>
   );

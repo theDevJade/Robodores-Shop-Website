@@ -20,6 +20,8 @@
   --motion-emphasis: cubic-bezier(0.22, 1, 0.36, 1);
   --viewport-rem: 16px;
   --viewport-scale: 1;
+  --safe-area-top: 0px;
+  --safe-area-bottom: 0px;
   --radius-lg: calc(22px * var(--viewport-scale));
   --radius-md: calc(16px * var(--viewport-scale));
   --radius-sm: calc(10px * var(--viewport-scale));
@@ -82,11 +84,32 @@ body::before {
 }
 
 .app-shell {
-  padding: var(--gap-lg) clamp(0.75rem, 5vw, var(--gap-lg)) calc(var(--gap-lg) * 1.25);
+  padding: calc(var(--gap-lg) + var(--safe-area-top)) clamp(0.75rem, 5vw, var(--gap-lg))
+    calc((var(--gap-lg) * 1.25) + var(--safe-area-bottom));
   max-width: min(1600px, calc(1440px * var(--viewport-scale)));
   width: min(100%, calc(1600px * var(--viewport-scale)));
   margin: 0 auto;
   transition: padding var(--motion-medium) var(--motion-standard);
+}
+
+:root[data-device-profile="mobile"] .app-shell {
+  max-width: 100%;
+  padding: calc(var(--gap-md) + var(--safe-area-top)) clamp(0.5rem, 6vw, var(--gap-md))
+    calc(var(--gap-lg) + 5rem + var(--safe-area-bottom));
+}
+
+:root[data-device-profile="mobile"] .card {
+  border-radius: calc(var(--radius-md) * 0.9);
+  padding: calc(1rem * var(--viewport-scale));
+}
+
+:root[data-device-profile="mobile"] nav.tab-bar button {
+  min-height: calc(3.2rem * var(--viewport-scale));
+  font-size: 0.95rem;
+}
+
+:root[data-device-profile="mobile"] .top-bar {
+  gap: calc(var(--gap-md) * 0.8);
 }
 
 .top-bar {
@@ -245,6 +268,8 @@ nav.tab-bar {
   flex-wrap: wrap;
   gap: calc(0.6rem * var(--viewport-scale));
   margin-bottom: calc(1.5rem * var(--viewport-scale));
+  overflow-x: auto;
+  scrollbar-width: none;
 }
 
 nav.tab-bar button {
@@ -274,6 +299,26 @@ nav.tab-bar button.active {
   color: var(--text);
   transform: translateY(-1px);
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+}
+
+nav.tab-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.mobile-tab-tray {
+  display: none;
+}
+
+@media (max-width: 1024px) {
+  nav.tab-bar {
+    flex-wrap: nowrap;
+    scroll-snap-type: x proximity;
+  }
+
+  nav.tab-bar button {
+    flex: 0 0 auto;
+    scroll-snap-align: start;
+  }
 }
 
 .card {
@@ -455,10 +500,22 @@ button[type="submit"] {
   margin-left: 0.3rem;
 }
 
+.table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  margin-top: 0.8rem;
+  border-radius: 18px;
+  padding-bottom: 0.25rem;
+}
+
+.table-scroll table {
+  margin-top: 0;
+  min-width: 640px;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 0.8rem;
   background: rgba(0, 0, 0, 0.08);
   border-radius: 18px;
   overflow: hidden;
@@ -864,14 +921,21 @@ input[type="file"]::-webkit-file-upload-button:hover {
     flex-wrap: wrap;
     justify-content: flex-start;
     gap: 0.75rem;
+    align-items: stretch;
+  }
+
+  .top-actions > * {
+    flex: 1 1 120px;
+  }
+
+  .theme-toggle,
+  .top-actions .refresh-btn {
+    width: 100%;
+    justify-content: center;
   }
 
   nav.tab-bar {
-    flex-direction: column;
-  }
-
-  nav.tab-bar button {
-    width: 100%;
+    display: none;
   }
 
   .tab-content {
@@ -879,7 +943,61 @@ input[type="file"]::-webkit-file-upload-button:hover {
   }
 
   .app-shell {
-    padding: calc(var(--gap-md) * 1.2) clamp(0.5rem, 6vw, var(--gap-md)) var(--gap-lg);
+    padding: calc(var(--gap-md) * 1.2 + var(--safe-area-top)) clamp(0.5rem, 6vw, var(--gap-md))
+      calc(var(--gap-lg) + 5.5rem + var(--safe-area-bottom));
+  }
+
+  .mobile-tab-tray {
+    display: flex;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 0.6rem clamp(1rem, 6vw, 1.8rem);
+    padding-bottom: calc(0.6rem + var(--safe-area-bottom));
+    background: color-mix(in srgb, var(--bg-panel) 90%, transparent);
+    backdrop-filter: blur(18px);
+    box-shadow: 0 -18px 45px rgba(0, 0, 0, 0.55);
+    gap: 0.5rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    z-index: 1500;
+  }
+
+  .mobile-tab-tray button {
+    flex: 0 0 auto;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-muted);
+    padding: 0.55rem 1rem;
+    font-size: 0.85rem;
+    transition:
+      background var(--motion-fast) var(--motion-standard),
+      transform var(--motion-fast) var(--motion-standard);
+  }
+
+  .mobile-tab-tray button.active {
+    background: var(--brand-strong);
+    color: #fff;
+    border-color: var(--brand-strong);
+    box-shadow: 0 12px 25px rgba(0, 0, 0, 0.35);
+  }
+
+  .mobile-tab-tray__action {
+    background: rgba(0, 0, 0, 0.35);
+    border-color: var(--border);
+    color: var(--text);
+  }
+
+  .table-scroll {
+    margin-left: -0.5rem;
+    margin-right: -0.5rem;
+    padding: 0 0.5rem 0.5rem;
+  }
+
+  .table-scroll table {
+    min-width: 520px;
   }
 }
 

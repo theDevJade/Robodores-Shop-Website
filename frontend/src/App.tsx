@@ -41,6 +41,10 @@ export default function App() {
     if (typeof window === "undefined") return "dark";
     return (localStorage.getItem("portal-theme") as "dark" | "light") || "dark";
   });
+  const [isCompactNav, setIsCompactNav] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia("(max-width: 720px)").matches;
+  });
 
   useEffect(() => {
     if (!user) return;
@@ -68,6 +72,19 @@ export default function App() {
     localStorage.setItem("portal-theme", theme);
   }, [theme]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const media = window.matchMedia("(max-width: 720px)");
+    const update = (event: MediaQueryListEvent | MediaQueryList) => setIsCompactNav(event.matches);
+    update(media);
+    if (typeof media.addEventListener === "function") {
+      media.addEventListener("change", update);
+      return () => media.removeEventListener("change", update);
+    }
+    media.addListener(update);
+    return () => media.removeListener(update);
+  }, []);
+
   const visibleTabs = useMemo(() => {
     if (!user) return [];
     return tabs.filter((tab) => tab.roles.includes(user.role));
@@ -90,10 +107,12 @@ export default function App() {
               <h1>Robodores 4255</h1>
             </div>
           </div>
-          <button className="theme-toggle" onClick={toggleTheme} aria-label="Toggle theme">
-            {theme === "dark" ? <MoonIcon /> : <SunIcon />}
-            <span>{theme === "dark" ? "Dark" : "Light"} mode</span>
-          </button>
+          <div className="top-actions">
+            <button className="theme-toggle" onClick={toggleTheme} aria-label="Toggle theme">
+              {theme === "dark" ? <MoonIcon /> : <SunIcon />}
+              <span>{theme === "dark" ? "Dark" : "Light"} mode</span>
+            </button>
+          </div>
         </header>
         <div className="card" style={{ maxWidth: 440, margin: "0 auto" }}>
           <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
@@ -155,13 +174,21 @@ export default function App() {
           </div>
         </div>
       </header>
-      <nav className="tab-bar">
-        {visibleTabs.map((tab) => (
-          <button key={tab.id} className={tab.id === active ? "active" : ""} onClick={() => setActive(tab.id)}>
-            {tab.label}
-          </button>
-        ))}
-      </nav>
+      {!isCompactNav && (
+        <nav className="tab-bar" role="tablist" aria-label="Primary navigation">
+          {visibleTabs.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              className={tab.id === active ? "active" : ""}
+              onClick={() => setActive(tab.id)}
+              aria-current={tab.id === active ? "page" : undefined}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </nav>
+      )}
       {active === "dashboard" && <Dashboard onNavigate={(tab) => setActive(tab)} />}
       {active === "attendance" && <AttendanceTab canViewLogs={Boolean(isLeadOrAdmin)} />}
       {active === "cnc" && <JobForm shop="cnc" />}
@@ -176,6 +203,29 @@ export default function App() {
           refreshUser={refreshUser}
           onClose={() => setSettingsOpen(false)}
         />
+      )}
+      {isCompactNav && (
+        <div className="mobile-tab-tray" role="tablist" aria-label="Primary navigation">
+          {visibleTabs.map((tab) => (
+            <button
+              key={`mobile-${tab.id}`}
+              type="button"
+              className={tab.id === active ? "active" : ""}
+              onClick={() => setActive(tab.id)}
+              aria-current={tab.id === active ? "page" : undefined}
+            >
+              <span>{tab.label}</span>
+            </button>
+          ))}
+          <button
+            type="button"
+            className="mobile-tab-tray__action"
+            onClick={() => setSettingsOpen(true)}
+            aria-label="Open account settings"
+          >
+            Account
+          </button>
+        </div>
       )}
       {kioskMode && (
         <div className="kiosk-overlay">

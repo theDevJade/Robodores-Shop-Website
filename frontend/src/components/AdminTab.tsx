@@ -115,35 +115,49 @@ function AccountsTab() {
 
       <div className="card" style={{marginTop:16}}>
         <h4>Pending Requests</h4>
-        <table><thead><tr><th>Name</th><th>Email</th><th>Requested</th><th></th></tr></thead><tbody>
-          {pending.map(p=> (
-            <tr key={p.id}>
-              <td>{p.full_name}</td><td>{p.email}</td><td>{p.requested_role}</td>
-              <td className="table-actions">
-                <select id={`role-${p.id}`} defaultValue={p.requested_role}><option value="student">Student</option><option value="lead">Lead</option><option value="admin">Admin</option></select>
-                <button onClick={()=>approve(p.id,(document.getElementById(`role-${p.id}`) as HTMLSelectElement).value)}>Approve</button>
-                <button onClick={()=>reject(p.id)}>Reject</button>
-              </td>
-            </tr>
-          ))}
-        </tbody></table>
+        <div className="table-scroll">
+          <table>
+            <thead>
+              <tr><th>Name</th><th>Email</th><th>Requested</th><th></th></tr>
+            </thead>
+            <tbody>
+              {pending.map(p=> (
+                <tr key={p.id}>
+                  <td>{p.full_name}</td><td>{p.email}</td><td>{p.requested_role}</td>
+                  <td className="table-actions">
+                    <select id={`role-${p.id}`} defaultValue={p.requested_role}><option value="student">Student</option><option value="lead">Lead</option><option value="admin">Admin</option></select>
+                    <button onClick={()=>approve(p.id,(document.getElementById(`role-${p.id}`) as HTMLSelectElement).value)}>Approve</button>
+                    <button onClick={()=>reject(p.id)}>Reject</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <div className="card" style={{marginTop:16}}>
         <h4>Users</h4>
-        <table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Barcode</th><th>Student ID</th><th></th></tr></thead><tbody>
-          {users.map(u=> (
-            <tr key={u.id}>
-              <td>{u.full_name}</td><td>{u.email}</td>
-              <td><select defaultValue={u.role} onChange={e=>updateUserRole(u.id,e.target.value)}><option value="student">Student</option><option value="lead">Lead</option><option value="admin">Admin</option></select></td>
-              <td><input defaultValue={u.barcode_id??""} onBlur={e=>updateBarcode(u.id,e.target.value)} /></td>
-              <td><input defaultValue={u.student_id??""} onBlur={e=>updateStudentId(u.id,e.target.value)} /></td>
-              <td className="table-actions">
-                <button type="button" className="danger" onClick={()=>deleteUserAccount(u.id, u.full_name)}>Remove</button>
-              </td>
-            </tr>
-          ))}
-        </tbody></table>
+        <div className="table-scroll">
+          <table>
+            <thead>
+              <tr><th>Name</th><th>Email</th><th>Role</th><th>Barcode</th><th>Student ID</th><th></th></tr>
+            </thead>
+            <tbody>
+              {users.map(u=> (
+                <tr key={u.id}>
+                  <td>{u.full_name}</td><td>{u.email}</td>
+                  <td><select defaultValue={u.role} onChange={e=>updateUserRole(u.id,e.target.value)}><option value="student">Student</option><option value="lead">Lead</option><option value="admin">Admin</option></select></td>
+                  <td><input defaultValue={u.barcode_id??""} onBlur={e=>updateBarcode(u.id,e.target.value)} /></td>
+                  <td><input defaultValue={u.student_id??""} onBlur={e=>updateStudentId(u.id,e.target.value)} /></td>
+                  <td className="table-actions">
+                    <button type="button" className="danger" onClick={()=>deleteUserAccount(u.id, u.full_name)}>Remove</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
       <ConfirmDialog
         open={Boolean(confirmState)}
@@ -197,17 +211,24 @@ function SchedulesTab(){
       </div>
       <div className="card" style={{marginTop:16}}>
         <h4>Existing Blocks</h4>
-        <table><thead><tr><th>Weekday</th><th>Start</th><th>End</th><th>Active</th><th></th></tr></thead><tbody>
-          {schedules.map((b:any)=>(
-            <tr key={b.id}>
-              <td>{["Mon","Tue","Wed","Thu","Fri","Sat","Sun"][b.weekday]}</td>
-              <td>{b.start_time}</td>
-              <td>{b.end_time}</td>
-              <td>{String(b.active)}</td>
-              <td className="table-actions"><button onClick={()=>remove(b.id)}>Remove</button></td>
-            </tr>
-          ))}
-        </tbody></table>
+        <div className="table-scroll">
+          <table>
+            <thead>
+              <tr><th>Weekday</th><th>Start</th><th>End</th><th>Active</th><th></th></tr>
+            </thead>
+            <tbody>
+              {schedules.map((b:any)=>(
+                <tr key={b.id}>
+                  <td>{["Mon","Tue","Wed","Thu","Fri","Sat","Sun"][b.weekday]}</td>
+                  <td>{b.start_time}</td>
+                  <td>{b.end_time}</td>
+                  <td>{String(b.active)}</td>
+                  <td className="table-actions"><button onClick={()=>remove(b.id)}>Remove</button></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

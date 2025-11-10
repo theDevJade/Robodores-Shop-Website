@@ -210,24 +210,26 @@ export function Dashboard({ onNavigate, kiosk }: Props) {
               View Full
             </button>
           </div>
-          <table>
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Check In</th>
-                <th>Check Out</th>
-              </tr>
-            </thead>
-            <tbody>
-              {metrics.attendanceHistory.slice(0, kiosk ? 10 : 6).map((entry) => (
-                <tr key={entry.id}>
-                  <td>{entry.student_name}</td>
-                  <td>{entry.check_in ? dayjs(entry.check_in).format("HH:mm") : "-"}</td>
-                  <td>{entry.check_out ? dayjs(entry.check_out).format("HH:mm") : "-"}</td>
+          <div className="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Check In</th>
+                  <th>Check Out</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {metrics.attendanceHistory.slice(0, kiosk ? 10 : 6).map((entry) => (
+                  <tr key={entry.id}>
+                    <td>{entry.student_name}</td>
+                    <td>{entry.check_in ? dayjs(entry.check_in).format("HH:mm") : "-"}</td>
+                    <td>{entry.check_out ? dayjs(entry.check_out).format("HH:mm") : "-"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       ) : null}
       {kiosk && (

@@ -8,3 +8,5 @@ cd "Parent folder of program"
 then run "copy backend\.env.example backend\.env "       
 
 then run "docker compose up --build"
+
+Once the containers start, the Vite dev server binds to all IPv4 interfaces, so you can open the UI from another device on your network via http://<your-computers-ipv4-address>:5173 as well as http://localhost:5173.

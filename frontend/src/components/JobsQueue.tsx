@@ -149,7 +149,8 @@ export function JobsQueue({ shop }: { shop: "cnc" | "printing" }) {
           </h3>
           <button className="refresh-btn" onClick={refresh} disabled={loading}>Refresh</button>
         </div>
-        <table>
+        <div className="table-scroll">
+          <table>
           <thead>
             <tr>
               <th>#</th>
@@ -203,57 +204,60 @@ export function JobsQueue({ shop }: { shop: "cnc" | "printing" }) {
               </tr>
             ))}
           </tbody>
-        </table>
+          </table>
+        </div>
       </div>
       <div className="card" style={{ marginTop: 16 }}>
         <h3>
           Claimed Jobs <span className="stat-muted">({claimedJobs.length})</span>
         </h3>
-        <table>
-          <thead>
-            <tr>
-              <th>Part</th>
-              <th>Owner</th>
-              <th>Status</th>
-              <th>Claimed By</th>
-              <th>Since</th>
-              <th>File</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {claimedJobs.map((j) => (
-              <tr key={j.id}>
-                <td>{j.part_name}</td>
-                <td>{j.owner_name}</td>
-                <td>{j.status}</td>
-                <td>{j.claimed_by_name ?? "Unknown"}</td>
-                <td>{j.claimed_at ? new Date(j.claimed_at).toLocaleString() : "-"}</td>
-                <td>
-                  {j.file_url ? (
-                    <a href={downloadHref(j.file_url)} target="_blank" rel="noreferrer">Download</a>
-                  ) : (
-                    j.file_name
-                  )}
-                </td>
-                <td style={{ textAlign: "right", display: "flex", gap: 8, justifyContent: "flex-end", flexWrap: "wrap" }}>
-                  <ViewNoteButton title={`${j.part_name} Notes`} content={j.notes} />
-                  {(user?.role === "lead" || user?.role === "admin" || j.claimed_by_id === user?.id) && (
-                    <button onClick={() => unclaimJob(j.id)}>Unclaim</button>
-                  )}
-                  <button onClick={() => removeJob(j.id)}>Remove</button>
-                </td>
-              </tr>
-            ))}
-            {claimedJobs.length === 0 && (
+        <div className="table-scroll">
+          <table>
+            <thead>
               <tr>
-                <td colSpan={7} style={{ textAlign: "center", opacity: 0.7 }}>
-                  No jobs claimed yet.
-                </td>
+                <th>Part</th>
+                <th>Owner</th>
+                <th>Status</th>
+                <th>Claimed By</th>
+                <th>Since</th>
+                <th>File</th>
+                <th></th>
               </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {claimedJobs.map((j) => (
+                <tr key={j.id}>
+                  <td>{j.part_name}</td>
+                  <td>{j.owner_name}</td>
+                  <td>{j.status}</td>
+                  <td>{j.claimed_by_name ?? "Unknown"}</td>
+                  <td>{j.claimed_at ? new Date(j.claimed_at).toLocaleString() : "-"}</td>
+                  <td>
+                    {j.file_url ? (
+                      <a href={downloadHref(j.file_url)} target="_blank" rel="noreferrer">Download</a>
+                    ) : (
+                      j.file_name
+                    )}
+                  </td>
+                  <td style={{ textAlign: "right", display: "flex", gap: 8, justifyContent: "flex-end", flexWrap: "wrap" }}>
+                    <ViewNoteButton title={`${j.part_name} Notes`} content={j.notes} />
+                    {(user?.role === "lead" || user?.role === "admin" || j.claimed_by_id === user?.id) && (
+                      <button onClick={() => unclaimJob(j.id)}>Unclaim</button>
+                    )}
+                    <button onClick={() => removeJob(j.id)}>Remove</button>
+                  </td>
+                </tr>
+              ))}
+              {claimedJobs.length === 0 && (
+                <tr>
+                  <td colSpan={7} style={{ textAlign: "center", opacity: 0.7 }}>
+                    No jobs claimed yet.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </>
   );

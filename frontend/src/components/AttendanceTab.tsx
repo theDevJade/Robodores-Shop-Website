@@ -141,46 +141,48 @@ export function AttendanceTab({ canViewLogs }: Props) {
       {days.map((g) => (
         <div key={g.date} className="card" style={{ marginTop: 12 }}>
           <h3>{g.date}</h3>
-          <table>
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>ID</th>
-                <th>Check In</th>
-                <th>Check Out</th>
-                <th>Status</th>
-                <th>Note</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {g.entries.map((log) => (
-                <tr key={log.id} className={log.status !== "ok" ? "warn" : undefined}>
-                  <td>{log.student_name}</td>
-                  <td>{log.student_identifier ?? "-"}</td>
-                  <td>{log.check_in ? dayjs(log.check_in).format("HH:mm") : "-"}</td>
-                  <td>{log.check_out ? dayjs(log.check_out).format("HH:mm") : "-"}</td>
-                  <td>
-                    {canVerify && (log.status === "unverified" || log.status === "ok") ? (
-                      <select value={log.status} onChange={e=>updateEntryStatus(log.id, e.target.value as "ok"|"unverified")}>
-                        <option value="ok">Verified</option>
-                        <option value="unverified">Unverified</option>
-                      </select>
-                    ) : (
-                      <span>{log.status}</span>
-                    )}
-                    {log.status === "unverified" && <span className="status-pill unverified">Unverified</span>}
-                  </td>
-                  <td>{log.note ? <ViewNoteButton title={`${log.student_name} Note`} content={log.note} /> : "-"}</td>
-                  <td style={{ textAlign: "right" }}>
-                    {user?.role === "admin" && (
-                      <button onClick={() => removeEntry(log.id)}>Remove</button>
-                    )}
-                  </td>
+          <div className="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>ID</th>
+                  <th>Check In</th>
+                  <th>Check Out</th>
+                  <th>Status</th>
+                  <th>Note</th>
+                  <th></th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {g.entries.map((log) => (
+                  <tr key={log.id} className={log.status !== "ok" ? "warn" : undefined}>
+                    <td>{log.student_name}</td>
+                    <td>{log.student_identifier ?? "-"}</td>
+                    <td>{log.check_in ? dayjs(log.check_in).format("HH:mm") : "-"}</td>
+                    <td>{log.check_out ? dayjs(log.check_out).format("HH:mm") : "-"}</td>
+                    <td>
+                      {canVerify && (log.status === "unverified" || log.status === "ok") ? (
+                        <select value={log.status} onChange={e=>updateEntryStatus(log.id, e.target.value as "ok"|"unverified")}>
+                          <option value="ok">Verified</option>
+                          <option value="unverified">Unverified</option>
+                        </select>
+                      ) : (
+                        <span>{log.status}</span>
+                      )}
+                      {log.status === "unverified" && <span className="status-pill unverified">Unverified</span>}
+                    </td>
+                    <td>{log.note ? <ViewNoteButton title={`${log.student_name} Note`} content={log.note} /> : "-"}</td>
+                    <td style={{ textAlign: "right" }}>
+                      {user?.role === "admin" && (
+                        <button onClick={() => removeEntry(log.id)}>Remove</button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       ))}
     </section>

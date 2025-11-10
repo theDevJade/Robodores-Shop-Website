@@ -132,43 +132,45 @@ export function OrdersTab({ canModerate }: Props) {
       </div>
       <div style={{ marginTop: "1.5rem" }}>
         <h3>Requests</h3>
-        <table>
-          <thead>
-            <tr>
-              <th>Requester</th>
-              <th>Part</th>
-              <th>Price</th>
-              <th>Status</th>
-              <th>Vendor</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {orders.map((order) => (
-              <tr key={order.id}>
-                <td>{order.requester_name}</td>
-                <td>{order.part_name}</td>
-                <td>${order.price_usd.toFixed(2)}</td>
-                <td>{order.status}</td>
-                <td>
-                  <a href={order.vendor_link} target="_blank" rel="noreferrer">
-                    Link
-                  </a>
-                </td>
-                <td style={{ textAlign: "right" }}>
-                  {order.justification ? (
-                    <ViewNoteButton title={`${order.part_name} Justification`} content={order.justification} />
-                  ) : (
-                    "-"
-                  )}
-                  {(canModerate || order.requester_name === user?.full_name) && (
-                    <button onClick={() => removeOrder(order.id)}>Remove</button>
-                  )}
-                </td>
+        <div className="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Requester</th>
+                <th>Part</th>
+                <th>Price</th>
+                <th>Status</th>
+                <th>Vendor</th>
+                <th></th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {orders.map((order) => (
+                <tr key={order.id}>
+                  <td>{order.requester_name}</td>
+                  <td>{order.part_name}</td>
+                  <td>${order.price_usd.toFixed(2)}</td>
+                  <td>{order.status}</td>
+                  <td>
+                    <a href={order.vendor_link} target="_blank" rel="noreferrer">
+                      Link
+                    </a>
+                  </td>
+                  <td style={{ textAlign: "right" }}>
+                    {order.justification ? (
+                      <ViewNoteButton title={`${order.part_name} Justification`} content={order.justification} />
+                    ) : (
+                      "-"
+                    )}
+                    {(canModerate || order.requester_name === user?.full_name) && (
+                      <button onClick={() => removeOrder(order.id)}>Remove</button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </section>
   );
