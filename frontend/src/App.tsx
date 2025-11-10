@@ -10,6 +10,7 @@ import { Signup } from "./components/Signup";
 import { Dashboard } from "./components/Dashboard";
 import { api } from "./api";
 import logo from "./assets/robodores.png";
+import { useViewportScale } from "./useViewportScale";
 
 type TabDefinition = {
   id: string;
@@ -29,6 +30,7 @@ const tabs: TabDefinition[] = [
 ];
 
 export default function App() {
+  useViewportScale();
   const { user, loading, login, logout, refreshUser } = useAuth();
   const [active, setActive] = useState<string>("dashboard");
   const [error, setError] = useState<string | null>(null);

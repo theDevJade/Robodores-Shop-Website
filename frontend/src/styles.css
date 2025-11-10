@@ -18,6 +18,14 @@
   --motion-slow: 640ms;
   --motion-standard: cubic-bezier(0.25, 0.8, 0.25, 1);
   --motion-emphasis: cubic-bezier(0.22, 1, 0.36, 1);
+  --viewport-rem: 16px;
+  --viewport-scale: 1;
+  --radius-lg: calc(22px * var(--viewport-scale));
+  --radius-md: calc(16px * var(--viewport-scale));
+  --radius-sm: calc(10px * var(--viewport-scale));
+  --gap-xl: calc(3rem * var(--viewport-scale));
+  --gap-lg: calc(2rem * var(--viewport-scale));
+  --gap-md: calc(1rem * var(--viewport-scale));
 }
 
 [data-theme="light"] {
@@ -38,6 +46,10 @@
   --motion-fast: 200ms;
   --motion-medium: 320ms;
   --motion-slow: 560ms;
+}
+
+html {
+  font-size: var(--viewport-rem);
 }
 
 * {
@@ -70,16 +82,19 @@ body::before {
 }
 
 .app-shell {
-  padding: 2.5rem clamp(1rem, 5vw, 3rem) 3rem;
-  max-width: 1440px;
+  padding: var(--gap-lg) clamp(0.75rem, 5vw, var(--gap-lg)) calc(var(--gap-lg) * 1.25);
+  max-width: min(1600px, calc(1440px * var(--viewport-scale)));
+  width: min(100%, calc(1600px * var(--viewport-scale)));
   margin: 0 auto;
+  transition: padding var(--motion-medium) var(--motion-standard);
 }
 
 .top-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1.5rem;
+  gap: var(--gap-md);
+  flex-wrap: wrap;
   margin-bottom: 2rem;
 }
 
@@ -90,9 +105,9 @@ body::before {
 }
 
 .brand img {
-  width: 72px;
-  height: 72px;
-  border-radius: 18px;
+  width: calc(72px * var(--viewport-scale));
+  height: calc(72px * var(--viewport-scale));
+  border-radius: calc(18px * var(--viewport-scale));
   box-shadow: 0 25px 60px rgba(0, 0, 0, 0.45);
   animation: pop 0.8s ease;
 }
@@ -228,18 +243,19 @@ body::before {
 nav.tab-bar {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.6rem;
-  margin-bottom: 1.5rem;
+  gap: calc(0.6rem * var(--viewport-scale));
+  margin-bottom: calc(1.5rem * var(--viewport-scale));
 }
 
 nav.tab-bar button {
-  flex: 1 1 140px;
-  border-radius: 12px;
+  flex: 1 1 calc(140px * var(--viewport-scale));
+  border-radius: calc(12px * var(--viewport-scale));
   border: 1px solid transparent;
   background: var(--bg-surface);
-  padding: 0.75rem 1rem;
+  padding: calc(0.65rem * var(--viewport-scale)) calc(1rem * var(--viewport-scale));
   font-weight: 600;
   color: var(--text-muted);
+  min-height: calc(2.75rem * var(--viewport-scale));
   transition:
     border var(--motion-fast) var(--motion-standard),
     color var(--motion-fast) var(--motion-standard),
@@ -262,11 +278,12 @@ nav.tab-bar button.active {
 
 .card {
   background: var(--bg-panel);
-  border-radius: 26px;
-  padding: 1.6rem;
+  border-radius: var(--radius-lg);
+  padding: calc(1.4rem * var(--viewport-scale));
   border: 1px solid var(--border);
-  box-shadow: 0 45px 95px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(18px);
+  box-shadow: 0 calc(45px * var(--viewport-scale)) calc(95px * var(--viewport-scale)) rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(calc(18px * var(--viewport-scale)));
   animation: float var(--motion-medium) var(--motion-emphasis);
   transform-style: preserve-3d;
 }
@@ -540,11 +557,11 @@ tr:hover {
   display: grid;
   place-items: center;
   z-index: 1000;
-  padding: 1rem;
+  padding: clamp(0.75rem, 4vw, var(--gap-md));
 }
 
 .modal {
-  width: min(520px, 100%);
+  width: min(calc(520px * var(--viewport-scale)), 100%);
   max-height: 90vh;
   overflow-y: auto;
 }
@@ -719,18 +736,18 @@ input[type="file"]::-webkit-file-upload-button:hover {
 
 .panel {
   border: 1px solid var(--border);
-  border-radius: 20px;
-  padding: 1rem;
+  border-radius: var(--radius-lg);
+  padding: calc(1rem * var(--viewport-scale));
   background: var(--bg-panel);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 calc(20px * var(--viewport-scale)) calc(40px * var(--viewport-scale)) rgba(0, 0, 0, 0.3);
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: calc(0.75rem * var(--viewport-scale));
 }
 
 .panel.kiosk {
-  border-radius: 26px;
-  padding: 1.3rem;
+  border-radius: calc(var(--radius-lg) * 1.1);
+  padding: calc(1.3rem * var(--viewport-scale));
 }
 
 .panel-header {
@@ -750,12 +767,12 @@ input[type="file"]::-webkit-file-upload-button:hover {
 
 .panel li {
   border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 14px;
-  padding: 0.7rem 0.85rem;
+  border-radius: var(--radius-md);
+  padding: calc(0.7rem * var(--viewport-scale)) calc(0.85rem * var(--viewport-scale));
   background: rgba(0, 0, 0, 0.12);
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
+  gap: calc(0.2rem * var(--viewport-scale));
 }
 
 .panel li strong {
@@ -799,7 +816,7 @@ input[type="file"]::-webkit-file-upload-button:hover {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2rem;
+  padding: calc(2rem * var(--viewport-scale));
 }
 
 .kiosk-panel {
@@ -808,20 +825,20 @@ input[type="file"]::-webkit-file-upload-button:hover {
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: calc(1rem * var(--viewport-scale));
   background: var(--bg);
   border-radius: 0;
   border: none;
-  padding: 2rem clamp(1rem, 5vw, 3rem);
+  padding: calc(2rem * var(--viewport-scale)) clamp(1rem, 5vw, 3rem);
 }
 .subtabs {
   display: flex;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
+  gap: calc(0.75rem * var(--viewport-scale));
+  margin-bottom: calc(1rem * var(--viewport-scale));
 }
 
 .subtabs button {
-  padding: 0.6rem 1rem;
+  padding: calc(0.6rem * var(--viewport-scale)) calc(1rem * var(--viewport-scale));
   border-radius: 12px;
   border: 1px solid var(--border);
   background: transparent;
@@ -833,4 +850,49 @@ input[type="file"]::-webkit-file-upload-button:hover {
   border-color: var(--brand-strong);
   color: #fff;
   box-shadow: 0 12px 25px rgba(0, 0, 0, 0.25);
+}
+
+@media (max-width: 720px) {
+  .top-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .top-actions {
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 0.75rem;
+  }
+
+  nav.tab-bar {
+    flex-direction: column;
+  }
+
+  nav.tab-bar button {
+    width: 100%;
+  }
+
+  .tab-content {
+    padding: 1.25rem;
+  }
+
+  .app-shell {
+    padding: calc(var(--gap-md) * 1.2) clamp(0.5rem, 6vw, var(--gap-md)) var(--gap-lg);
+  }
+}
+
+@media (min-width: 1600px) {
+  .tab-content {
+    padding: calc(2.25rem * var(--viewport-scale));
+  }
+
+  nav.tab-bar button {
+    flex: 0 1 calc(200px * var(--viewport-scale));
+  }
+
+  .dashboard-panels {
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  }
 }
