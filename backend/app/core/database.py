@@ -69,6 +69,13 @@ def init_db() -> None:
         inventory_names = {row[1] for row in inventory_cols}
         if "vendor_link" not in inventory_names:
             conn.execute(text("ALTER TABLE inventoryitem ADD COLUMN vendor_link VARCHAR"))
+        # New inventory fields added in UI overhaul
+        if "part_type" not in inventory_names:
+            conn.execute(text("ALTER TABLE inventoryitem ADD COLUMN part_type VARCHAR"))
+            # Default existing rows to 'custom' to maintain compatibility
+            conn.execute(text("UPDATE inventoryitem SET part_type = 'custom' WHERE part_type IS NULL"))
+        if "vendor_name" not in inventory_names:
+            conn.execute(text("ALTER TABLE inventoryitem ADD COLUMN vendor_name VARCHAR"))
         manuf_cols = conn.execute(text("PRAGMA table_info('manufacturingpart')")).fetchall()
         manuf_names = {row[1] for row in manuf_cols}
         if manuf_cols:

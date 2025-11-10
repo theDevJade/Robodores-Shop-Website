@@ -55,6 +55,10 @@ class InventoryReason(str, Enum):
     job = "job"
     correction = "correction"
 
+class InventoryPartType(str, Enum):
+    custom = "custom"
+    cots = "cots"
+
 class User(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     email: str = Field(index=True, unique=True)
@@ -122,11 +126,13 @@ class InventoryItem(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     part_name: str
     sku: str | None = Field(default=None, index=True)
+    part_type: InventoryPartType = Field(default=InventoryPartType.custom, index=True)
     location: str | None = Field(default=None, index=True)
     quantity: int = Field(default=0)
     unit_cost: float | None = None
     reorder_threshold: int | None = None
     tags: str | None = None
+    vendor_name: str | None = None
     vendor_link: str | None = None
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 

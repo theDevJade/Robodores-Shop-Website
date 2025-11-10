@@ -158,31 +158,38 @@ class OrderStatusUpdate(BaseModel):
 class InventoryItemCreate(BaseModel):
     part_name: str
     sku: str | None = None
+    part_type: str = "custom"
     location: str | None = None
     quantity: int = 0
     unit_cost: float | None = None
     reorder_threshold: int | None = None
     tags: str | None = None
+    vendor_name: Optional[str] = None
     vendor_link: Optional[str] = None
 
 class InventoryItemUpdate(BaseModel):
     part_name: Optional[str] = None
     sku: Optional[str] = None
+    part_type: Optional[str] = None
     location: Optional[str] = None
+    quantity: Optional[int] = None
     unit_cost: Optional[float] = None
     reorder_threshold: Optional[int] = None
     tags: Optional[str] = None
+    vendor_name: Optional[str] = None
     vendor_link: Optional[str] = None
 
 class InventoryItemRead(BaseModel):
     id: int
     part_name: str
     sku: str | None
+    part_type: str
     location: str | None
     quantity: int
     unit_cost: float | None
     reorder_threshold: int | None
     tags: str | None
+    vendor_name: str | None
     vendor_link: str | None
     updated_at: datetime
 

@@ -162,16 +162,31 @@ def get_section_dataset(section: models.SheetSection, session: Session) -> Tuple
         ]
     elif section == models.SheetSection.inventory:
         items = session.exec(select(models.InventoryItem).order_by(models.InventoryItem.part_name)).all()
-        headers = ["ID", "Part", "SKU", "Location", "Qty", "UnitCost", "ReorderAt", "Tags", "VendorLink", "UpdatedAt"]
+        headers = [
+            "ID",
+            "Part",
+            "SKU",
+            "PartType",
+            "Location",
+            "Qty",
+            "UnitCost",
+            "ReorderAt",
+            "Vendor",
+            "Tags",
+            "VendorLink",
+            "UpdatedAt",
+        ]
         rows = [
             [
                 str(it.id),
                 it.part_name,
                 it.sku or "",
+                it.part_type.value if it.part_type else "",
                 it.location or "",
                 str(it.quantity),
                 "" if it.unit_cost is None else f"{it.unit_cost:.2f}",
                 "" if it.reorder_threshold is None else str(it.reorder_threshold),
+                it.vendor_name or "",
                 it.tags or "",
                 it.vendor_link or "",
                 it.updated_at.isoformat(),
