@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../api";
 import { useAuth } from "../auth";
 import { ExportPanel } from "./ExportPanel";
+import { CsvRecord, createRowAccessor } from "../utils/csv";
 
 export type InventoryPartType = "custom" | "cots";
 
@@ -45,7 +46,6 @@ export function InventoryTab({ canEdit }: Props) {
   const [loading, setLoading] = useState(false);
   const [orderItem, setOrderItem] = useState<InventoryItem | null>(null);
   const [addModalOpen, setAddModalOpen] = useState(false);
-  const [importModalOpen, setImportModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
   const searchTimeout = useRef<number | null>(null);
   const [typeFilter, setTypeFilter] = useState<InventoryPartType | "all">("all");
@@ -154,6 +154,29 @@ export function InventoryTab({ canEdit }: Props) {
 
   const emptyState = !loading && filteredItems.length === 0;
 
+  const handleInventoryImport = async (rows: CsvRecord[], range?: { start: number; end: number }) => {
+    const failures: string[] = [];
+    let created = 0;
+    for (let index = 0; index < rows.length; index += 1) {
+      const absoluteRow = (range?.start ?? 1) + index;
+      try {
+        const payload = mapInventoryRow(rows[index]);
+        await api.post("/inventory/items", payload);
+        created += 1;
+      } catch (error: any) {
+        failures.push(`Row ${absoluteRow}: ${error?.message ?? "Unable to import item"}`);
+      }
+    }
+    if (created) {
+      await fetchItems(query || undefined);
+    }
+    if (failures.length) {
+      throw new Error(
+        `${created ? `Imported ${created} item(s); ` : ""}${failures.length} failed:\n${failures.join("\n")}`,
+      );
+    }
+  };
+
   return (
     <section>
       {orderItem && (
@@ -173,15 +196,6 @@ export function InventoryTab({ canEdit }: Props) {
           }}
         />
       )}
-      {importModalOpen && (
-        <BulkImportModal
-          onClose={() => setImportModalOpen(false)}
-          onImported={async () => {
-            await fetchItems(query || undefined);
-            setImportModalOpen(false);
-          }}
-        />
-      )}
       {editingItem && (
         <EditItemModal
           item={editingItem}
@@ -196,7 +210,18 @@ export function InventoryTab({ canEdit }: Props) {
           }}
         />
       )}
-      <ExportPanel section="inventory" defaultName="inventory" helper="Exports the full inventory grid." />
+      <ExportPanel
+        section="inventory"
+        defaultName="inventory"
+        helper="Exports the full inventory grid."
+        importConfig={{
+          label: "Import inventory",
+          helper:
+            "Columns: part_name, part_type, sku, location, quantity, unit_cost, reorder_threshold, vendor_name, tags, vendor_link.",
+          supportsRange: true,
+          onProcessRows: handleInventoryImport,
+        }}
+      />
 
       <div className="card inventory-table-card">
         <div className="inventory-table-card__head">
@@ -212,9 +237,6 @@ export function InventoryTab({ canEdit }: Props) {
               <div className="inventory-table-card__actions">
                 <button type="button" className="button-primary" onClick={() => setAddModalOpen(true)}>
                   + Add item
-                </button>
-                <button type="button" className="button-surface" onClick={() => setImportModalOpen(true)}>
-                  Bulk import CSV
                 </button>
               </div>
             )}
@@ -655,66 +677,6 @@ function EditItemModal({
   );
 }
 
-function BulkImportModal({ onClose, onImported }: { onClose: () => void; onImported: () => Promise<void> | void }) {
-  const [file, setFile] = useState<File | null>(null);
-  const [importing, setImporting] = useState(false);
-  const example = [
-    "part_name,part_type,sku,location,quantity,unit_cost,reorder_threshold,vendor_name,tags,vendor_link",
-    "Battery Mount,custom,RB-INT-100,Chassis Cart,4,15.50,2,,structure,",
-    "Limelight Camera,cots,LL2+,Vision Bench,1,399.00,1,REV Robotics,vision,https://example.com/limelight",
-  ].join("\n");
-
-  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    if (!file) {
-      alert("Select a CSV file to import.");
-      return;
-    }
-    const data = new FormData();
-    data.append("file", file);
-    setImporting(true);
-    try {
-      await api.post("/inventory/items/import", data, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      await onImported();
-    } catch (err: any) {
-      const message = err?.response?.data?.detail ?? err?.message ?? "Failed to import CSV";
-      alert(message);
-    } finally {
-      setImporting(false);
-    }
-  }
-
-  return (
-    <div className="modal-backdrop">
-      <div className="modal card">
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <h3>Bulk import parts</h3>
-          <button type="button" onClick={onClose}>
-            Close
-          </button>
-        </div>
-        <p className="modal-helper">
-          Upload a UTF-8 CSV with one row per part. Required columns: part_name, part_type (custom|cots), sku, location, quantity,
-          unit_cost, reorder_threshold. Include vendor_name when part_type is COTS. Tags and vendor_link are optional.
-        </p>
-        <form onSubmit={handleSubmit} className="inventory-form">
-          <label>
-            CSV file
-            <input type="file" accept=".csv,text/csv" onChange={(e) => setFile(e.target.files?.[0] ?? null)} required />
-          </label>
-          <button type="submit" disabled={importing}>
-            {importing ? "Importing…" : "Import CSV"}
-          </button>
-        </form>
-        <p className="modal-helper">Example format:</p>
-        <pre className="code-block">{example}</pre>
-      </div>
-    </div>
-  );
-}
-
 type InventoryFormState = {
   part_name: string;
   part_type: InventoryPartType;
@@ -811,6 +773,41 @@ function buildPayloadFromForm(form: InventoryFormState): { errors: string[]; pay
   };
 
   return { errors, payload };
+}
+
+function mapInventoryRow(record: CsvRecord): InventoryPayload {
+  const get = createRowAccessor(record);
+  const part_name = (get("part_name") || "").trim();
+  if (!part_name) throw new Error("Missing part_name");
+  const partTypeRaw = (get("part_type") || "custom").trim().toLowerCase();
+  const part_type: InventoryPartType = partTypeRaw === "cots" ? "cots" : "custom";
+  const sku = (get("sku") || "").trim();
+  if (!sku) throw new Error("Missing sku");
+  const location = (get("location") || "").trim();
+  if (!location) throw new Error("Missing location");
+  const quantity = Number.parseInt(get("quantity") || "0", 10);
+  if (!Number.isFinite(quantity)) throw new Error("Invalid quantity");
+  const unit_cost = Number.parseFloat(get("unit_cost") || "0");
+  if (!Number.isFinite(unit_cost)) throw new Error("Invalid unit_cost");
+  const reorder_threshold = Number.parseInt(get("reorder_threshold") || "0", 10);
+  if (!Number.isFinite(reorder_threshold)) throw new Error("Invalid reorder_threshold");
+  const vendor_name = (get("vendor_name") || "").trim();
+  if (part_type === "cots" && !vendor_name) {
+    throw new Error("vendor_name required for COTS items");
+  }
+  const payload: InventoryPayload = {
+    part_name,
+    part_type,
+    sku,
+    location,
+    quantity,
+    unit_cost,
+    reorder_threshold,
+    vendor_name: vendor_name || null,
+    vendor_link: (get("vendor_link") || "").trim() || null,
+    tags: (get("tags") || "").trim() || null,
+  };
+  return payload;
 }
 
 function QuickOrderModal({

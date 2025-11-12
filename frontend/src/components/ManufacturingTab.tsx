@@ -8,6 +8,8 @@ import {
 } from "react";
 import { api } from "../api";
 import { useAuth } from "../auth";
+import { ExportPanel } from "./ExportPanel";
+import { CsvRecord, createRowAccessor } from "../utils/csv";
 
 type ManufacturingType = "cnc" | "printing" | "manual";
 type ManufacturingPriority = "low" | "normal" | "urgent";
@@ -115,7 +117,7 @@ const STATUS_COLUMNS: Array<{ status: ManufacturingStatus; label: string; descri
 
 const TYPE_SPECIFIC_FIELDS: Record<
   ManufacturingType,
-  Array<{ name: keyof NewPartState; label: string; placeholder?: string }>
+  Array<{ name: keyof NewPartState; label: string; placeholder?: string; required?: boolean }>
 > = {
   cnc: [
     { name: "cam_link", label: "CAM File Link", placeholder: "Onshape / Fusion CAM link" },
@@ -124,7 +126,12 @@ const TYPE_SPECIFIC_FIELDS: Record<
     { name: "material_stock", label: "Material Stock", placeholder: "Stock length / bin" },
   ],
   printing: [
-    { name: "printer_assignment", label: "Printer Assignment", placeholder: "Printer or workstation" },
+    {
+      name: "printer_assignment",
+      label: "Printer Assignment",
+      placeholder: "Printer or workstation",
+      required: false,
+    },
     { name: "slicer_profile", label: "Slicer Profile", placeholder: "Profile + layer height" },
     { name: "filament_type", label: "Filament Type", placeholder: "PLA / ABS / PETG" },
   ],
@@ -140,6 +147,13 @@ const defaultFilters: FilterState = {
   priority: "all",
   search: "",
 };
+
+const TYPE_FILTER_OPTIONS: Array<{ value: FilterState["type"]; label: string; description: string }> = [
+  { value: "all", label: "All", description: "Show every part" },
+  { value: "cnc", label: "CNC", description: "Mill, router, and lathe work" },
+  { value: "printing", label: "3D Printing", description: "FDM & resin jobs" },
+  { value: "manual", label: "Manual", description: "Hand tools & assembly" },
+];
 
 type ViewPrefs = {
   onlyMine: boolean;
@@ -460,11 +474,46 @@ export function ManufacturingTab() {
     }
   };
 
+  const handleManufacturingImport = async (rows: CsvRecord[], range?: { start: number; end: number }) => {
+    const failures: string[] = [];
+    let created = 0;
+    for (let index = 0; index < rows.length; index += 1) {
+      const absoluteRow = (range?.start ?? 1) + index;
+      try {
+        const payload = mapManufacturingRow(rows[index]);
+        await api.post("/manufacturing/parts", payload);
+        created += 1;
+      } catch (error: any) {
+        failures.push(`Row ${absoluteRow}: ${error?.message ?? "Unable to import request"}`);
+      }
+    }
+    if (created) {
+      await refreshParts(true);
+    }
+    if (failures.length) {
+      throw new Error(
+        `${created ? `Imported ${created} request(s); ` : ""}${failures.length} failed:\n${failures.join("\n")}`,
+      );
+    }
+  };
+
   const boardClasses = ["manufacturing"];
   if (viewPrefs.compactMode) boardClasses.push("compact");
 
   return (
     <section className={boardClasses.join(" ")}>
+      <ExportPanel
+        section="manufacturing"
+        defaultName="manufacturing-board"
+        helper="Download or import manufacturing requests."
+        importConfig={{
+          label: "Import manufacturing requests",
+          helper:
+            "Columns: part_name, subsystem, material, quantity, manufacturing_type, cad_link, priority, notes, and other optional fields.",
+          supportsRange: true,
+          onProcessRows: handleManufacturingImport,
+        }}
+      />
       <div className="manufacturing-top card">
         <div className="top-line">
           <div>
@@ -475,20 +524,57 @@ export function ManufacturingTab() {
           </div>
         </div>
         <div className="control-row">
-          <div className="toolbar-fields">
-            <label>
-              Type
-              <select
-                value={filters.type}
-                onChange={(event) => setFilters((prev) => ({ ...prev, type: event.target.value as FilterState["type"] }))}
+          <div className="control-row__types">
+            <div className="type-tabs-wrapper">
+              <div className="type-tabs" role="tablist" aria-label="Manufacturing type filter">
+                {TYPE_FILTER_OPTIONS.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    role="tab"
+                    aria-selected={filters.type === option.value}
+                    className={filters.type === option.value ? "type-tab active" : "type-tab"}
+                    title={option.description}
+                    onClick={() => setFilters((prev) => ({ ...prev, type: option.value }))}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="view-toggles">
+              <button
+                type="button"
+                className={viewPrefs.onlyMine ? "chip-toggle active" : "chip-toggle"}
+                onClick={() => updateViewPrefs({ onlyMine: !viewPrefs.onlyMine })}
               >
-                <option value="all">All</option>
-                <option value="cnc">CNC</option>
-                <option value="printing">3D Printing</option>
-                <option value="manual">Manual</option>
-              </select>
-            </label>
-            <label>
+                My Work
+              </button>
+              <button
+                type="button"
+                className={viewPrefs.onlyUrgent ? "chip-toggle active" : "chip-toggle"}
+                onClick={() => updateViewPrefs({ onlyUrgent: !viewPrefs.onlyUrgent })}
+              >
+                Urgent Only
+              </button>
+              <button
+                type="button"
+                className={viewPrefs.hideOldCompleted ? "chip-toggle active" : "chip-toggle"}
+                onClick={() => updateViewPrefs({ hideOldCompleted: !viewPrefs.hideOldCompleted })}
+              >
+                Hide Old Completed
+              </button>
+              <button
+                type="button"
+                className={viewPrefs.compactMode ? "chip-toggle active" : "chip-toggle"}
+                onClick={() => updateViewPrefs({ compactMode: !viewPrefs.compactMode })}
+              >
+                Compact Mode
+              </button>
+            </div>
+          </div>
+          <div className="control-row__filters">
+            <label className="priority-field">
               Priority
               <select
                 value={filters.priority}
@@ -502,51 +588,21 @@ export function ManufacturingTab() {
                 <option value="low">Low</option>
               </select>
             </label>
+            <label className="search search--wide">
+              <span className="sr-only">Search</span>
+              <input
+                placeholder="Search part, subsystem, or material"
+                value={filters.search}
+                onChange={(event) => setFilters((prev) => ({ ...prev, search: event.target.value }))}
+              />
+            </label>
           </div>
-          <label className="search">
-            <span className="sr-only">Search</span>
-            <input
-              placeholder="Search part, subsystem, or material"
-              value={filters.search}
-              onChange={(event) => setFilters((prev) => ({ ...prev, search: event.target.value }))}
-            />
-          </label>
           <div className="action-buttons">
             <button type="button" onClick={() => setModalOpen(true)}>
               Create Request
             </button>
             <button className="refresh-btn" onClick={() => refreshParts()} disabled={loading}>
               Refresh
-            </button>
-          </div>
-          <div className="view-toggles">
-            <button
-              type="button"
-              className={viewPrefs.onlyMine ? "chip-toggle active" : "chip-toggle"}
-              onClick={() => updateViewPrefs({ onlyMine: !viewPrefs.onlyMine })}
-            >
-              My Work
-            </button>
-            <button
-              type="button"
-              className={viewPrefs.onlyUrgent ? "chip-toggle active" : "chip-toggle"}
-              onClick={() => updateViewPrefs({ onlyUrgent: !viewPrefs.onlyUrgent })}
-            >
-              Urgent Only
-            </button>
-            <button
-              type="button"
-              className={viewPrefs.hideOldCompleted ? "chip-toggle active" : "chip-toggle"}
-              onClick={() => updateViewPrefs({ hideOldCompleted: !viewPrefs.hideOldCompleted })}
-            >
-              Hide Old Completed
-            </button>
-            <button
-              type="button"
-              className={viewPrefs.compactMode ? "chip-toggle active" : "chip-toggle"}
-              onClick={() => updateViewPrefs({ compactMode: !viewPrefs.compactMode })}
-            >
-              Compact Mode
             </button>
           </div>
         </div>
@@ -768,16 +824,33 @@ const CreateModal = ({
           <div className="type-grid">
             {TYPE_SPECIFIC_FIELDS[state.manufacturing_type].map((field) => (
               <label key={field.name}>
-                <RequiredLabel>{field.label}</RequiredLabel>
+                {field.required === false ? (
+                  <span className="optional-label">
+                    {field.label}
+                    <small>Optional</small>
+                  </span>
+                ) : (
+                  <RequiredLabel>{field.label}</RequiredLabel>
+                )}
                 <input
                   value={(state[field.name] as string) ?? ""}
                   onChange={(e) => onChange(field.name, e.target.value)}
                   placeholder={field.placeholder}
-                  required
+                  required={field.required !== false}
                 />
               </label>
             ))}
           </div>
+          <label className="full-width">
+            <span className="optional-label">
+              Printer Assignment <small>Optional</small>
+            </span>
+            <input
+              value={state.printer_assignment}
+              onChange={(e) => onChange("printer_assignment", e.target.value)}
+              placeholder="Printer or workstation"
+            />
+          </label>
           <div className="file-grid">
             <label>
               CAD File Upload
@@ -1162,19 +1235,36 @@ function PartDrawer({
               <textarea value={state.notes} onChange={(e) => handleChange("notes", e.target.value)} rows={3} />
             </label>
           </div>
-          <div className="type-grid">
-            {TYPE_SPECIFIC_FIELDS[state.manufacturing_type].map((field) => (
-              <label key={field.name}>
+        <div className="type-grid">
+          {TYPE_SPECIFIC_FIELDS[state.manufacturing_type].map((field) => (
+            <label key={field.name}>
+              {field.required === false ? (
+                <span className="optional-label">
+                  {field.label}
+                  <small>Optional</small>
+                </span>
+              ) : (
                 <RequiredLabel>{field.label}</RequiredLabel>
-                <input
-                  value={(state[field.name] as string) ?? ""}
-                  onChange={(e) => handleChange(field.name, e.target.value)}
-                  placeholder={field.placeholder}
-                  required
-                />
-              </label>
-            ))}
-          </div>
+              )}
+              <input
+                value={(state[field.name] as string) ?? ""}
+                onChange={(e) => handleChange(field.name, e.target.value)}
+                placeholder={field.placeholder}
+                required={field.required !== false}
+              />
+            </label>
+          ))}
+        </div>
+        <label className="full-width">
+          <span className="optional-label">
+            Printer Assignment <small>Optional</small>
+          </span>
+          <input
+            value={state.printer_assignment}
+            onChange={(e) => handleChange("printer_assignment", e.target.value)}
+            placeholder="Printer or workstation"
+          />
+        </label>
           {isLead && (
             <div className="assignment-grid">
               <AssigneePicker
@@ -1505,6 +1595,51 @@ function formatDuration(minutes?: number | null): string | null {
   const mins = minutes % 60;
   if (!mins) return `${hours}h`;
   return `${hours}h ${mins}m`;
+}
+
+function mapManufacturingRow(record: CsvRecord) {
+  const get = createRowAccessor(record);
+  const part_name = (get("part_name") || "").trim();
+  if (!part_name) throw new Error("Missing part_name");
+  const subsystem = (get("subsystem") || "").trim();
+  if (!subsystem) throw new Error("Missing subsystem");
+  const material = (get("material") || "").trim();
+  if (!material) throw new Error("Missing material");
+  const cad_link = (get("cad_link") || "").trim();
+  if (!cad_link) throw new Error("Missing cad_link");
+  const typeRaw = (get("manufacturing_type") || "cnc").trim().toLowerCase();
+  const manufacturing_type: ManufacturingType = ["cnc", "printing", "manual"].includes(typeRaw as ManufacturingType)
+    ? (typeRaw as ManufacturingType)
+    : "cnc";
+  const priorityRaw = (get("priority") || "normal").trim().toLowerCase();
+  const priority: ManufacturingPriority = ["low", "normal", "urgent"].includes(priorityRaw as ManufacturingPriority)
+    ? (priorityRaw as ManufacturingPriority)
+    : "normal";
+  const quantity = Number.parseInt(get("quantity") || "1", 10);
+  if (!Number.isFinite(quantity) || quantity <= 0) throw new Error("Invalid quantity");
+
+  const payload: Record<string, any> = {
+    part_name,
+    subsystem,
+    material,
+    cad_link,
+    quantity,
+    manufacturing_type,
+    priority,
+    notes: (get("notes") || "").trim() || null,
+    material_stock: (get("material_stock") || "").trim() || null,
+    cam_link: (get("cam_link") || "").trim() || null,
+    cam_student: (get("cam_student") || "").trim() || null,
+    cnc_operator: (get("cnc_operator") || "").trim() || null,
+    printer_assignment: (get("printer_assignment") || "").trim() || null,
+    slicer_profile: (get("slicer_profile") || "").trim() || null,
+    filament_type: (get("filament_type") || "").trim() || null,
+    tool_type: (get("tool_type") || "").trim() || null,
+    dimensions: (get("dimensions") || "").trim() || null,
+    responsible_student: (get("responsible_student") || "").trim() || null,
+  };
+
+  return payload;
 }
 
 function isOlderThan(dateString: string | null | undefined, days: number): boolean {

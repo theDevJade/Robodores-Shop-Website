@@ -42,14 +42,32 @@ function AccountsTab() {
 
   async function createUser(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault(); const data = Object.fromEntries(new FormData(e.currentTarget));
-    try{ await api.post("/auth/create", { email:data.email, full_name:data.full_name, role:data.role, password:data.password, barcode_id:data.barcode_id||null, student_id:data.student_id||null }); (e.target as HTMLFormElement).reset(); show("ok","User created"); refresh(); }
+    const studentId = typeof data.student_id === "string" ? data.student_id.trim() : "";
+    try{
+      await api.post("/auth/create", {
+        email: data.email,
+        full_name: data.full_name,
+        role: data.role,
+        password: data.password,
+        barcode_id: studentId || null,
+        student_id: studentId || null,
+      });
+      (e.target as HTMLFormElement).reset(); show("ok","User created"); refresh();
+    }
     catch(e:any){ show("err", e?.response?.data?.detail || e?.message || "Failed to create user"); }
   }
   async function approve(id:number, role:string){ try{ await api.post(`/auth/requests/${id}/approve`,{role}); show("ok","Approved"); refresh(); }catch{ show("err","Approve failed"); } }
   async function reject(id:number){ try{ await api.post(`/auth/requests/${id}/reject`); show("ok","Rejected"); refresh(); }catch{ show("err","Reject failed"); } }
   async function updateUserRole(id:number, role:string){ try{ await api.patch(`/auth/users/${id}`,{role}); show("ok","Role updated"); refresh(); }catch{ show("err","Update failed"); } }
-  async function updateBarcode(id:number, v:string){ try{ await api.patch(`/auth/users/${id}`,{barcode_id:v||null}); show("ok","Barcode updated"); }catch{ show("err","Update failed"); } }
-  async function updateStudentId(id:number, v:string){ try{ await api.patch(`/auth/users/${id}`,{student_id:v||null}); show("ok","Student ID updated"); }catch{ show("err","Update failed"); } }
+  async function updateStudentId(id:number, v:string){
+    const trimmed = v.trim();
+    try{
+      await api.patch(`/auth/users/${id}`,{student_id: trimmed || null, barcode_id: trimmed || null});
+      show("ok","Student ID updated");
+    }catch{
+      show("err","Update failed");
+    }
+  }
   const [confirmState, setConfirmState] = useState<{ message: string; action: () => Promise<void> | void } | null>(null);
   const [confirmBusy, setConfirmBusy] = useState(false);
 
@@ -92,7 +110,7 @@ function AccountsTab() {
         <label style={{flex:1}}>
           <span className="sr">Search</span>
           <input
-            placeholder="Search by name, email, role, barcode, or student ID"
+            placeholder="Search by name, email, role, or student ID"
             value={search}
             onChange={e=>setSearch(e.target.value)}
           />
@@ -107,7 +125,6 @@ function AccountsTab() {
           <label>Email<input type="email" name="email" required/></label>
           <label>Password<input type="password" name="password" required/></label>
           <label>Role<select name="role" defaultValue="student"><option value="student">Student</option><option value="lead">Lead</option><option value="admin">Admin</option></select></label>
-          <label>Barcode ID<input name="barcode_id"/></label>
           <label>Student ID<input name="student_id"/></label>
           <button type="submit">Create</button>
         </form>
@@ -141,15 +158,14 @@ function AccountsTab() {
         <div className="table-scroll">
           <table>
             <thead>
-              <tr><th>Name</th><th>Email</th><th>Role</th><th>Barcode</th><th>Student ID</th><th></th></tr>
+              <tr><th>Name</th><th>Email</th><th>Role</th><th>Student ID</th><th></th></tr>
             </thead>
             <tbody>
               {users.map(u=> (
                 <tr key={u.id}>
                   <td>{u.full_name}</td><td>{u.email}</td>
                   <td><select defaultValue={u.role} onChange={e=>updateUserRole(u.id,e.target.value)}><option value="student">Student</option><option value="lead">Lead</option><option value="admin">Admin</option></select></td>
-                  <td><input defaultValue={u.barcode_id??""} onBlur={e=>updateBarcode(u.id,e.target.value)} /></td>
-                  <td><input defaultValue={u.student_id??""} onBlur={e=>updateStudentId(u.id,e.target.value)} /></td>
+                  <td><input defaultValue={u.student_id??u.barcode_id??""} onBlur={e=>updateStudentId(u.id,e.target.value)} placeholder="123456" /></td>
                   <td className="table-actions">
                     <button type="button" className="danger" onClick={()=>deleteUserAccount(u.id, u.full_name)}>Remove</button>
                   </td>

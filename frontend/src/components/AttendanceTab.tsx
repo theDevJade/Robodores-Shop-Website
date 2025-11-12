@@ -4,6 +4,7 @@ import { api } from "../api";
 import { useAuth } from "../auth";
 import { ViewNoteButton } from "./ViewNoteButton";
 import { ExportPanel } from "./ExportPanel";
+import { CsvRecord, createRowAccessor } from "../utils/csv";
 
 type Block = { id:number; weekday:number; start_time:string; end_time:string; active:boolean };
 const WD = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
@@ -99,7 +100,21 @@ export function AttendanceTab({ canViewLogs }: Props) {
 
   return (
     <section>
-      <ExportPanel section="attendance" defaultName="attendance-log" helper="Exports the current attendance history." />
+      <ExportPanel
+        section="attendance"
+        defaultName="attendance-log"
+        helper="Exports the current attendance history."
+        importConfig={{
+          label: "Import attendance",
+          helper: "Upload barcode_id, mode, timestamp, and note columns to backfill logs.",
+          supportsRange: true,
+          onProcessRows: async (rows) => {
+            await importAttendanceRows(rows);
+            await fetchLogs();
+            await fetchSummary();
+          },
+        }}
+      />
       <form onSubmit={onScan} className="card">
         <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 8 }}>
           <button type="button" className={mode === "in" ? "active" : ""} onClick={() => setMode("in")}>Check In</button>
@@ -187,4 +202,43 @@ export function AttendanceTab({ canViewLogs }: Props) {
       ))}
     </section>
   );
+}
+
+async function importAttendanceRows(rows: CsvRecord[]) {
+  const failures: string[] = [];
+  let created = 0;
+  for (let idx = 0; idx < rows.length; idx += 1) {
+    const absoluteRow = idx + 1;
+    const record = rows[idx];
+    try {
+      const payload = mapAttendanceRow(record);
+      await api.post("/attendance/scan", payload);
+      created += 1;
+    } catch (error: any) {
+      failures.push(`Row ${absoluteRow}: ${error?.message ?? "Unable to import"}`);
+    }
+  }
+  if (failures.length) {
+    throw new Error(
+      `${created ? `Imported ${created} row(s); ` : ""}${failures.length} failed:\n${failures.join("\n")}`,
+    );
+  }
+}
+
+function mapAttendanceRow(record: CsvRecord) {
+  const get = createRowAccessor(record);
+  const identifier = get("barcode_id") || get("student_id") || get("student_identifier");
+  if (!identifier) throw new Error("Missing barcode or student ID");
+  const modeRaw = get("mode") || "in";
+  const mode = modeRaw.toLowerCase().startsWith("out") ? "out" : "in";
+  const timestampRaw = get("timestamp");
+  const timestamp = timestampRaw && !Number.isNaN(Date.parse(timestampRaw)) ? new Date(timestampRaw).toISOString() : new Date().toISOString();
+  const note = get("note") || get("comment");
+  return {
+    barcode_id: identifier,
+    student_id: identifier.length === 6 ? identifier : undefined,
+    mode,
+    timestamp,
+    note: note || undefined,
+  };
 }

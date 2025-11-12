@@ -76,7 +76,7 @@ Frontend change for single origin
 ---
 
 ## 5) Common pitfalls and quick checks
-- “Works on desktop but not on phone”:
+- ï¿½Works on desktop but not on phoneï¿½:
   - Likely `VITE_API_URL` points to `http://localhost:8000`, which on a phone means the phone itself. Use your host LAN IP instead.
 - Confirm ports published:
   - `docker compose ps` should show `0.0.0.0:5173->5173/tcp` and `0.0.0.0:8000->8000/tcp`.

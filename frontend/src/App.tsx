@@ -256,8 +256,7 @@ function SettingsModal({
 }) {
   const [form, setForm] = useState({
     full_name: user.full_name,
-    barcode_id: user.barcode_id ?? "",
-    student_id: user.student_id ?? "",
+    student_id: user.student_id ?? user.barcode_id ?? "",
     password: "",
   });
   const [saving, setSaving] = useState(false);
@@ -266,8 +265,7 @@ function SettingsModal({
   useEffect(() => {
     setForm({
       full_name: user.full_name,
-      barcode_id: user.barcode_id ?? "",
-      student_id: user.student_id ?? "",
+      student_id: user.student_id ?? user.barcode_id ?? "",
       password: "",
     });
     setStatus(null);
@@ -281,11 +279,12 @@ function SettingsModal({
     e.preventDefault();
     setSaving(true);
     setStatus(null);
+    const trimmedStudentId = form.student_id.trim();
     try {
       await api.patch("/auth/me", {
-        full_name: form.full_name,
-        barcode_id: form.barcode_id || null,
-        student_id: form.student_id || null,
+        full_name: form.full_name.trim(),
+        barcode_id: trimmedStudentId || null,
+        student_id: trimmedStudentId || null,
         password: form.password || undefined,
       });
       await refreshUser();
@@ -318,10 +317,6 @@ function SettingsModal({
           <label>
             Student ID
             <input value={form.student_id} onChange={(e) => updateField("student_id", e.target.value)} placeholder="e.g. 123456" />
-          </label>
-          <label>
-            Barcode ID
-            <input value={form.barcode_id} onChange={(e) => updateField("barcode_id", e.target.value)} placeholder="Scanner code" />
           </label>
           <label>
             New Password

@@ -5,6 +5,7 @@ import { useAuth } from "../auth";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { ViewNoteButton } from "./ViewNoteButton";
 import { ExportPanel } from "./ExportPanel";
+import { CsvRecord, createRowAccessor } from "../utils/csv";
 
 type Tab = "feature" | "issue";
 
@@ -58,6 +59,15 @@ export function TicketsTab() {
         section={exportSection}
         defaultName={tab === "feature" ? "feature-requests" : "issues"}
         helper="Exports whichever queue you're viewing."
+        importConfig={{
+          label: "Import tickets",
+          helper: "Upload subject, priority, and details columns to seed the queue.",
+          supportsRange: true,
+          onProcessRows: async (rows) => {
+            await importTickets(rows, tab);
+            await fetchTickets();
+          },
+        }}
       />
       <div className="card">
         <div className="subtabs">
@@ -250,4 +260,40 @@ function TicketQueue({
       />
     </div>
   );
+}
+
+async function importTickets(rows: CsvRecord[], type: Tab) {
+  const failures: string[] = [];
+  let created = 0;
+  for (let idx = 0; idx < rows.length; idx += 1) {
+    const rowNumber = idx + 1;
+    try {
+      const payload = mapTicketRow(rows[idx], type);
+      await api.post("/tickets/", payload);
+      created += 1;
+    } catch (error: any) {
+      failures.push(`Row ${rowNumber}: ${error?.message ?? "Unable to import"}`);
+    }
+  }
+  if (failures.length) {
+    throw new Error(
+      `${created ? `Imported ${created} row(s); ` : ""}${failures.length} failed:\n${failures.join("\n")}`,
+    );
+  }
+}
+
+function mapTicketRow(record: CsvRecord, type: Tab) {
+  const get = createRowAccessor(record);
+  const subject = (get("subject") || get("title") || "").trim();
+  const details = (get("details") || get("description") || "").trim();
+  const priorityRaw = (get("priority") || "normal").toLowerCase();
+  const priority = ["low", "normal", "high"].includes(priorityRaw) ? priorityRaw : "normal";
+  if (!subject) throw new Error("Missing subject");
+  if (!details) throw new Error("Missing details");
+  return {
+    type,
+    subject,
+    details,
+    priority,
+  };
 }

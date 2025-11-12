@@ -368,6 +368,70 @@ nav.tab-bar::-webkit-scrollbar {
   flex: 1 1 220px;
 }
 
+.export-panel__import {
+  border-top: 1px dashed var(--border);
+  padding-top: 0.75rem;
+}
+
+.export-panel__fileRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.export-panel__fileRow input[type="file"] {
+  flex: 1 1 260px;
+}
+
+.export-panel__fileRow button {
+  white-space: nowrap;
+}
+
+.export-panel__import input[type="file"] {
+  flex: 1 1 260px;
+}
+
+.export-panel__range {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.export-panel__range label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  min-width: 120px;
+}
+
+.export-panel__range input {
+  width: 100%;
+}
+
+.export-panel__range--modal {
+  width: 100%;
+}
+
+.import-toggle {
+  margin-top: 1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.import-toggle input {
+  transform: scale(1.1);
+}
+
 @keyframes float {
   from {
     opacity: 0;
@@ -818,6 +882,11 @@ tr:hover {
   margin-top: 1rem;
 }
 
+.inventory-form label {
+  font-size: 0.85rem;
+  line-height: 1.2;
+}
+
 .inventory-form .form-actions {
   display: flex;
   gap: 0.75rem;
@@ -907,6 +976,16 @@ tr:hover {
   width: min(calc(520px * var(--viewport-scale)), 100%);
   max-height: 90vh;
   overflow-y: auto;
+}
+
+.manufacturing-modal {
+  width: min(calc(520px * var(--viewport-scale)), 100%);
+}
+
+@media (min-width: 900px) {
+  .manufacturing-modal {
+    width: min(calc(1040px * var(--viewport-scale)), 100%);
+  }
 }
 
 .settings-modal form {
@@ -1214,17 +1293,37 @@ input[type="file"]::-webkit-file-upload-button:hover {
 
 .control-row {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 1rem;
-  flex-wrap: wrap;
-  justify-content: space-between;
   margin-top: 1rem;
+}
+
+.control-row__types,
+.control-row__filters {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
 .action-buttons {
   display: flex;
   gap: 0.65rem;
   flex-wrap: wrap;
+  justify-content: flex-end;
+  width: 100%;
+}
+
+@media (min-width: 720px) {
+  .control-row__types {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .control-row__filters {
+    flex-direction: row;
+    align-items: flex-end;
+    gap: 1rem;
+  }
 }
 
 .manufacturing-form {
@@ -1277,6 +1376,12 @@ input[type="file"]::-webkit-file-upload-button:hover {
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
+  margin-top: 0.5rem;
+  justify-content: flex-start;
+}
+
+.control-row__types .view-toggles {
+  margin-top: 0;
 }
 
 .chip-toggle {
@@ -1294,9 +1399,110 @@ input[type="file"]::-webkit-file-upload-button:hover {
   color: #fff;
 }
 
-.toolbar-fields {
+.type-tabs-wrapper {
+  display: inline-flex;
+  justify-self: start;
+  flex: 1 1 auto;
+}
+
+.type-tabs {
   display: flex;
-  gap: 1rem;
+  flex-wrap: wrap;
+  gap: 0.1rem;
+  padding: 0.08rem 0.18rem;
+  border-radius: 18px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.type-tab {
+  border: none;
+  border-radius: 999px;
+  padding: 0.1rem 0.45rem;
+  background: transparent;
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 0.7rem;
+  cursor: pointer;
+}
+
+.type-tab.active {
+  background: var(--brand-strong);
+  color: #fff;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.priority-field {
+  min-width: 160px;
+  max-width: 200px;
+}
+
+.priority-field select {
+  width: 100%;
+}
+
+.search--wide {
+  flex: 1 1 auto;
+}
+
+.search--wide input {
+  width: 100%;
+}
+
+.optional-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.optional-label small {
+  font-weight: 500;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.orders-requests-card {
+  margin-top: 1.5rem;
+}
+
+.orders-requests-card__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.orders-requests-card__head h3 {
+  margin: 0;
+}
+
+.csv-tools {
+  margin-top: 1.25rem;
+  border-top: 1px solid var(--border);
+  padding-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.csv-tools__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.75rem;
+}
+
+.csv-tools__grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.csv-tools__actions {
+  display: flex;
+  gap: 0.65rem;
   flex-wrap: wrap;
 }
 
