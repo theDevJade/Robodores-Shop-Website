@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { AttendanceTab } from "./components/AttendanceTab";
 import { InventoryTab } from "./components/InventoryTab";
-import { JobForm } from "./components/JobForm";
+import { ManufacturingTab } from "./components/ManufacturingTab";
 import { OrdersTab } from "./components/OrdersTab";
 import { TicketsTab } from "./components/TicketsTab";
 import { useAuth, User } from "./auth";
@@ -21,8 +21,7 @@ type TabDefinition = {
 const tabs: TabDefinition[] = [
   { id: "dashboard", label: "Dashboard", roles: ["student", "lead", "admin"] },
   { id: "attendance", label: "Attendance", roles: ["student", "lead", "admin"] },
-  { id: "cnc", label: "CNC", roles: ["student", "lead", "admin"] },
-  { id: "printing", label: "3D Printing", roles: ["student", "lead", "admin"] },
+  { id: "manufacturing", label: "Manufacturing", roles: ["student", "lead", "admin"] },
   { id: "orders", label: "Orders", roles: ["student", "lead", "admin"] },
   { id: "inventory", label: "Inventory", roles: ["lead", "admin"] },
   { id: "tickets", label: "Feature Requests", roles: ["student", "lead", "admin"] },
@@ -191,8 +190,7 @@ export default function App() {
       )}
       {active === "dashboard" && <Dashboard onNavigate={(tab) => setActive(tab)} />}
       {active === "attendance" && <AttendanceTab canViewLogs={Boolean(isLeadOrAdmin)} />}
-      {active === "cnc" && <JobForm shop="cnc" />}
-      {active === "printing" && <JobForm shop="printing" />}
+      {active === "manufacturing" && <ManufacturingTab />}
       {active === "orders" && <OrdersTab canModerate={Boolean(isLeadOrAdmin)} />}
       {active === "inventory" && <InventoryTab canEdit={Boolean(isLeadOrAdmin)} />}
       {active === "tickets" && <TicketsTab />}

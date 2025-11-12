@@ -8,6 +8,7 @@ const ensureCsv = (name: string) => {
 
 export type ExportSection =
   | "attendance"
+  | "manufacturing"
   | "cnc"
   | "printing"
   | "orders"

@@ -5,6 +5,7 @@ from .. import models
 
 TITLE_MAP = {
     models.SheetSection.attendance: "Attendance",
+    models.SheetSection.manufacturing: "Manufacturing",
     models.SheetSection.cnc: "CNC",
     models.SheetSection.printing: "Printing",
     models.SheetSection.orders: "Orders",
@@ -32,6 +33,99 @@ def get_section_dataset(section: models.SheetSection, session: Session) -> Tuple
             ]
             for e in entries
         ]
+    elif section == models.SheetSection.manufacturing:
+        parts = session.exec(
+            select(models.ManufacturingPart).order_by(models.ManufacturingPart.created_at.desc())
+        ).all()
+        user_ids: set[int] = set()
+        for part in parts:
+            user_ids.add(part.created_by_id)
+            if part.approved_by_id:
+                user_ids.add(part.approved_by_id)
+            for sid in part.assigned_student_ids or []:
+                user_ids.add(sid)
+            for lid in part.assigned_lead_ids or []:
+                user_ids.add(lid)
+        user_map: dict[int, str] = {}
+        if user_ids:
+            assignments = session.exec(
+                select(models.User).where(models.User.id.in_(user_ids))
+            ).all()
+            user_map = {user.id: user.full_name for user in assignments}
+        headers = [
+            "ID",
+            "Part",
+            "Subsystem",
+            "Material",
+            "Quantity",
+            "Type",
+            "Priority",
+            "Status",
+            "AssignedStudents",
+            "AssignedLeads",
+            "CADLink",
+            "CAMLink",
+            "CAMStudent",
+            "CNCOoperator",
+            "MaterialStock",
+            "PrinterAssignment",
+            "SlicerProfile",
+            "FilamentType",
+            "ToolType",
+            "Dimensions",
+            "ResponsibleStudent",
+            "Notes",
+            "CreatedBy",
+            "ApprovedBy",
+            "CreatedAt",
+            "UpdatedAt",
+            "EtaMinutes",
+            "EtaTarget",
+            "CadFileName",
+            "CamFileName",
+        ]
+        rows = []
+        for part in parts:
+            student_names = [
+                user_map.get(student_id, str(student_id)) for student_id in (part.assigned_student_ids or [])
+            ]
+            lead_names = [
+                user_map.get(lead_id, str(lead_id)) for lead_id in (part.assigned_lead_ids or [])
+            ]
+            rows.append(
+                [
+                    str(part.id),
+                    part.part_name,
+                    part.subsystem,
+                    part.material,
+                    str(part.quantity),
+                    part.manufacturing_type.value,
+                    part.priority.value,
+                    part.status.value,
+                    "; ".join(student_names),
+                    "; ".join(lead_names),
+                    part.cad_link,
+                    part.cam_link or "",
+                    part.cam_student or "",
+                    part.cnc_operator or "",
+                    part.material_stock or "",
+                    part.printer_assignment or "",
+                    part.slicer_profile or "",
+                    part.filament_type or "",
+                    part.tool_type or "",
+                    part.dimensions or "",
+                    part.responsible_student or "",
+                    part.notes or "",
+                    user_map.get(part.created_by_id, part.created_by_name),
+                    user_map.get(part.approved_by_id, "") if part.approved_by_id else "",
+                    part.created_at.isoformat(),
+                    part.updated_at.isoformat(),
+                    "" if part.student_eta_minutes is None else str(part.student_eta_minutes),
+                    part.eta_target.isoformat() if part.eta_target else "",
+                    part.cad_file_name or "",
+                    part.cam_file_name or "",
+                ]
+            )
     elif section in (models.SheetSection.cnc, models.SheetSection.printing):
         shop = models.ShopType.cnc if section == models.SheetSection.cnc else models.ShopType.printing
         jobs = session.exec(select(models.ShopJob).where(models.ShopJob.shop == shop).order_by(models.ShopJob.queue_position)).all()
@@ -68,16 +162,31 @@ def get_section_dataset(section: models.SheetSection, session: Session) -> Tuple
         ]
     elif section == models.SheetSection.inventory:
         items = session.exec(select(models.InventoryItem).order_by(models.InventoryItem.part_name)).all()
-        headers = ["ID", "Part", "SKU", "Location", "Qty", "UnitCost", "ReorderAt", "Tags", "VendorLink", "UpdatedAt"]
+        headers = [
+            "ID",
+            "Part",
+            "SKU",
+            "PartType",
+            "Location",
+            "Qty",
+            "UnitCost",
+            "ReorderAt",
+            "Vendor",
+            "Tags",
+            "VendorLink",
+            "UpdatedAt",
+        ]
         rows = [
             [
                 str(it.id),
                 it.part_name,
                 it.sku or "",
+                it.part_type.value if it.part_type else "",
                 it.location or "",
                 str(it.quantity),
                 "" if it.unit_cost is None else f"{it.unit_cost:.2f}",
                 "" if it.reorder_threshold is None else str(it.reorder_threshold),
+                it.vendor_name or "",
                 it.tags or "",
                 it.vendor_link or "",
                 it.updated_at.isoformat(),

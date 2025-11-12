@@ -2,29 +2,25 @@ import { useEffect, useRef, useState } from "react";
 import dayjs from "dayjs";
 import { api } from "../api";
 import { useAuth } from "../auth";
-import { ViewNoteButton } from "./ViewNoteButton";
 
 type Summary = { date: string; open_entries: number };
-type JobPreview = {
+type PanelItem = {
   id: number;
-  part_name: string;
-  owner_name: string;
-  claimed_by_name?: string | null;
-  status: string;
-  notes?: string | null;
+  title: string;
+  subtitle?: string;
+  status?: string;
+  badge?: string;
+  note?: string | null;
 };
-type OrderPreview = {
-  id: number;
-  part_name: string;
-  requester_name: string;
-  status: string;
-  notes?: string | null;
+type ManufacturingSummary = {
+  total: number;
+  urgent: number;
+  by_status: Record<string, number>;
 };
 type DashboardMetrics = {
   attendance?: Summary;
-  cnc: { total: number; claimed: number; items: JobPreview[] };
-  printing: { total: number; claimed: number; items: JobPreview[] };
-  orders: { total: number; pending: number; items: OrderPreview[] };
+  manufacturing: { total: number; urgent: number; byStatus: Record<string, number>; items: PanelItem[] };
+  orders: { total: number; pending: number; items: PanelItem[] };
   attendanceHistory: Array<{ id: number; student_name: string; check_in: string | null; check_out: string | null }>;
 };
 
@@ -45,48 +41,43 @@ export function Dashboard({ onNavigate, kiosk }: Props) {
   async function load() {
     setLoading(true);
     try {
-      const [attendanceRes, cncRes, printingRes, ordersRes, historyRes] = await Promise.all([
+      const [attendanceRes, summaryRes, manufacturingPartsRes, ordersRes, historyRes] = await Promise.all([
         api.get<Summary>("/attendance/summary/today"),
-        api.get("/jobs/", { params: { shop: "cnc" } }),
-        api.get("/jobs/", { params: { shop: "printing" } }),
+        api.get<ManufacturingSummary>("/manufacturing/summary"),
+        api.get("/manufacturing/parts"),
         api.get("/orders/"),
         api.get("/attendance/today_logs"),
       ]);
-      const cncJobs = cncRes.data ?? [];
-      const printingJobs = printingRes.data ?? [];
+      const parts = manufacturingPartsRes.data ?? [];
       const orders = ordersRes.data ?? [];
-      const toPreview = (jobs: any[]) =>
-        jobs.slice(0, kiosk ? 6 : 4).map((job) => ({
-          id: job.id,
-          part_name: job.part_name,
-          owner_name: job.owner_name,
-          claimed_by_name: job.claimed_by_name,
-          status: job.status,
-          notes: job.notes,
-        }));
-      const orderPreview = orders.slice(0, kiosk ? 6 : 4).map((o: any) => ({
-        id: o.id,
-        part_name: o.part_name,
-        requester_name: o.requester_name,
-        status: o.status,
-        notes: o.justification,
+      const manufacturingItems: PanelItem[] = parts.slice(0, kiosk ? 6 : 4).map((part: any) => ({
+        id: part.id,
+        title: part.part_name,
+        subtitle: part.subsystem,
+        status: part.status_label ?? part.status,
+        badge: (part.manufacturing_type ?? "").toUpperCase(),
+        note: part.priority === "urgent" ? "Urgent" : undefined,
       }));
+      const orderItems: PanelItem[] = orders.slice(0, kiosk ? 6 : 4).map((order: any) => ({
+        id: order.id,
+        title: order.part_name,
+        subtitle: order.requester_name,
+        status: order.status,
+        note: order.justification,
+      }));
+      const summary = summaryRes.data;
       setMetrics({
         attendance: attendanceRes.data,
-        cnc: {
-          total: cncJobs.length,
-          claimed: cncJobs.filter((j: any) => j.claimed_by_id).length,
-          items: toPreview(cncJobs),
-        },
-        printing: {
-          total: printingJobs.length,
-          claimed: printingJobs.filter((j: any) => j.claimed_by_id).length,
-          items: toPreview(printingJobs),
+        manufacturing: {
+          total: summary.total,
+          urgent: summary.urgent,
+          byStatus: summary.by_status,
+          items: manufacturingItems,
         },
         orders: {
           total: orders.length,
-          pending: orders.filter((o: any) => o.status === "pending").length,
-          items: orderPreview,
+          pending: orders.filter((order: any) => order.status === "pending").length,
+          items: orderItems,
         },
         attendanceHistory: historyRes.data ?? [],
       });
@@ -136,22 +127,16 @@ export function Dashboard({ onNavigate, kiosk }: Props) {
       action: () => onNavigate("attendance"),
     },
     {
+      title: "Manufacturing",
+      value: metrics?.manufacturing?.total ?? (loading ? "..." : "—"),
+      subtitle: metrics?.manufacturing ? `${metrics.manufacturing.urgent} urgent` : "",
+      action: () => onNavigate("manufacturing"),
+    },
+    {
       title: "Orders",
       value: metrics?.orders?.total ?? (loading ? "..." : "—"),
       subtitle: metrics?.orders ? `${metrics.orders.pending} pending` : "",
       action: () => onNavigate("orders"),
-    },
-    {
-      title: "CNC Queue",
-      value: metrics?.cnc?.total ?? (loading ? "..." : "—"),
-      subtitle: metrics?.cnc ? `${metrics.cnc.claimed} claimed` : "",
-      action: () => onNavigate("cnc"),
-    },
-    {
-      title: "3D Printing Queue",
-      value: metrics?.printing?.total ?? (loading ? "..." : "—"),
-      subtitle: metrics?.printing ? `${metrics.printing.claimed} claimed` : "",
-      action: () => onNavigate("printing"),
     },
   ];
 
@@ -166,39 +151,31 @@ export function Dashboard({ onNavigate, kiosk }: Props) {
           </button>
         ))}
       </div>
-      {(metrics?.cnc?.items?.length || metrics?.printing?.items?.length || metrics?.orders?.items?.length) && (
+      {(metrics?.manufacturing?.items?.length || metrics?.orders?.items?.length) && (
         <div className={`dashboard-panels ${kiosk ? "kiosk" : ""}`}>
           <Panel
-            title="CNC Queue"
-            items={metrics?.cnc?.items ?? []}
-            emptyLabel="Queue is clear"
-            onClick={() => onNavigate("cnc")}
+            title="Manufacturing Flow"
+            items={metrics?.manufacturing?.items ?? []}
+            emptyLabel="No active builds"
+            onClick={() => onNavigate("manufacturing")}
             kiosk={Boolean(kiosk)}
-            total={metrics?.cnc?.total ?? 0}
-            claimed={metrics?.cnc?.claimed ?? 0}
-          />
-          <Panel
-            title="3D Printing Queue"
-            items={metrics?.printing?.items ?? []}
-            emptyLabel="Queue is clear"
-            onClick={() => onNavigate("printing")}
-            kiosk={Boolean(kiosk)}
-            total={metrics?.printing?.total ?? 0}
-            claimed={metrics?.printing?.claimed ?? 0}
+            total={metrics?.manufacturing?.total ?? 0}
+            secondary={
+              metrics?.manufacturing
+                ? `Urgent: ${metrics.manufacturing.urgent}`
+                : ""
+            }
           />
           <Panel
             title="Orders"
-            items={metrics?.orders?.items?.map((o) => ({
-              id: o.id,
-              part_name: o.part_name,
-              owner_name: o.requester_name,
-              status: o.status,
-            })) ?? []}
+            items={metrics?.orders?.items ?? []}
             emptyLabel="No orders yet"
             onClick={() => onNavigate("orders")}
             kiosk={Boolean(kiosk)}
             total={metrics?.orders?.total ?? 0}
-            claimed={metrics?.orders?.pending ?? 0}
+            secondary={
+              metrics?.orders ? `Pending: ${metrics.orders.pending}` : ""
+            }
           />
         </div>
       )}
@@ -285,21 +262,24 @@ export function Dashboard({ onNavigate, kiosk }: Props) {
 
 type PanelProps = {
   title: string;
-  items: JobPreview[];
+  items: PanelItem[];
   emptyLabel: string;
   onClick: () => void;
   kiosk: boolean;
   total: number;
-  claimed: number;
+  secondary?: string;
 };
 
-function Panel({ title, items, emptyLabel, onClick, kiosk, total, claimed }: PanelProps) {
+function Panel({ title, items, emptyLabel, onClick, kiosk, total, secondary }: PanelProps) {
   return (
     <div className={`panel ${kiosk ? "kiosk" : ""}`}>
       <div className="panel-header">
         <div>
           <h4>{title}</h4>
-          <span className="stat-muted">Total: {total} • Claimed: {claimed}</span>
+          <span className="stat-muted">
+            Total: {total}
+            {secondary ? ` • ${secondary}` : ""}
+          </span>
         </div>
         <button className="refresh-btn" onClick={onClick}>
           Open
@@ -311,16 +291,15 @@ function Panel({ title, items, emptyLabel, onClick, kiosk, total, claimed }: Pan
         <ul>
           {items.map((item) => (
             <li key={item.id}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
                 <div>
-                  <strong>{item.part_name}</strong>
-                  <span className="stat-muted"> Owner: {item.owner_name}</span>
+                  <strong>{item.title}</strong>
+                  {item.subtitle && <span className="stat-muted"> • {item.subtitle}</span>}
                 </div>
-                {item.claimed_by_name && <span className="claimed-pill">Claimed</span>}
+                {item.badge && <span className="claimed-pill">{item.badge}</span>}
               </div>
-              {item.claimed_by_name && <span className="stat-muted">Claimed by {item.claimed_by_name}</span>}
-              <span className="status-small">{item.status}</span>
-              {item.notes && <ViewNoteButton title={`${item.part_name} Notes`} content={item.notes} />}
+              {item.status && <span className="status-small">{item.status}</span>}
+              {item.note && <span className="stat-muted">{item.note}</span>}
             </li>
           ))}
         </ul>

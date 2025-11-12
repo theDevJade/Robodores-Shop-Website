@@ -3,7 +3,18 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from .core.database import init_db
 from .core.config import get_settings
-from .routers import auth, attendance, exports, inventory, jobs, orders, schedules, settings as settings_router, tickets
+from .routers import (
+    auth,
+    attendance,
+    exports,
+    inventory,
+    jobs,
+    manufacturing,
+    orders,
+    schedules,
+    settings as settings_router,
+    tickets,
+)
 
 app_settings = get_settings()
 
@@ -21,6 +32,7 @@ def build_app() -> FastAPI:
     app.include_router(attendance.router)
     app.include_router(schedules.router)
     app.include_router(jobs.router)
+    app.include_router(manufacturing.router)
     app.include_router(inventory.router)
     app.include_router(orders.router)
     app.include_router(exports.router)
