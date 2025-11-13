@@ -99,7 +99,7 @@ export function AttendanceTab({ canViewLogs }: Props) {
   }
 
   return (
-    <section>
+    <section className="attendance-section">
       <ExportPanel
         section="attendance"
         defaultName="attendance-log"

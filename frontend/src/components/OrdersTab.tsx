@@ -3,7 +3,7 @@ import { api } from "../api";
 import { useAuth } from "../auth";
 import { ViewNoteButton } from "./ViewNoteButton";
 import { ExportPanel } from "./ExportPanel";
-import { CsvRecord, createRowAccessor, parseCsv } from "../utils/csv";
+import { CsvRecord, createRowAccessor } from "../utils/csv";
 
 export type Order = {
   id: number;
@@ -31,11 +31,6 @@ export function OrdersTab({ canModerate }: Props) {
     price_usd: "",
     justification: "",
   });
-  const [csvFile, setCsvFile] = useState<File | null>(null);
-  const [csvRow, setCsvRow] = useState("1");
-  const [csvRange, setCsvRange] = useState({ start: "1", end: "" });
-  const [csvStatus, setCsvStatus] = useState<{ t: "ok" | "err"; m: string } | null>(null);
-  const [csvWorking, setCsvWorking] = useState(false);
 
   useEffect(() => {
     setForm((prev) => ({ ...prev, requester_name: user?.full_name ?? "" }));
@@ -119,56 +114,6 @@ export function OrdersTab({ canModerate }: Props) {
     }
   }
 
-  async function loadCsvRecords() {
-    if (!csvFile) throw new Error("Select a CSV file first.");
-    const text = await csvFile.text();
-    const { records } = parseCsv(text);
-    if (!records.length) throw new Error("CSV has no data rows.");
-    return records;
-  }
-
-  async function handleCsvPrefill() {
-    try {
-      setCsvWorking(true);
-      setCsvStatus(null);
-      const rowNumber = Math.max(1, Number.parseInt(csvRow || "1", 10));
-      const records = await loadCsvRecords();
-      const record = records[rowNumber - 1];
-      if (!record) throw new Error(`Row ${rowNumber} not found.`);
-      const mapped = mapOrderRow(record);
-      setForm({
-        requester_name: mapped.requester_name || user?.full_name || "",
-        part_name: mapped.part_name,
-        vendor_link: mapped.vendor_link,
-        price_usd: mapped.price,
-        justification: mapped.justification,
-      });
-      setCsvStatus({ t: "ok", m: `Filled form from row ${rowNumber}` });
-    } catch (error: any) {
-      setCsvStatus({ t: "err", m: error?.message ?? "Unable to load row" });
-    } finally {
-      setCsvWorking(false);
-    }
-  }
-
-  async function handleCsvBulkImport() {
-    try {
-      setCsvWorking(true);
-      setCsvStatus(null);
-      const records = await loadCsvRecords();
-      const start = Math.max(1, Number.parseInt(csvRange.start || "1", 10));
-      const end = csvRange.end ? Math.max(start, Number.parseInt(csvRange.end, 10)) : records.length;
-      const slice = records.slice(start - 1, end);
-      if (!slice.length) throw new Error("Selected range has no data.");
-      await importOrdersFromRows(slice, { start, end });
-      setCsvStatus({ t: "ok", m: `Imported ${slice.length} row(s).` });
-    } catch (error: any) {
-      setCsvStatus({ t: "err", m: error?.message ?? "Bulk import failed" });
-    } finally {
-      setCsvWorking(false);
-    }
-  }
-
   function resetForm() {
     setForm({
       requester_name: user?.full_name ?? "",
@@ -219,69 +164,6 @@ export function OrdersTab({ canModerate }: Props) {
             <textarea name="justification" placeholder="Why we need this part" value={form.justification} onChange={(e) => updateField("justification", e.target.value)} />
           </label>
           <button type="submit" disabled={submitting}>{submitting ? "Submitting..." : "Submit Request"}</button>
-          <div className="csv-tools">
-            <div>
-              <h4 style={{ margin: 0 }}>CSV Tools</h4>
-              <p className="stat-muted" style={{ margin: 0 }}>
-                Prefill this form or submit multiple rows without leaving the portal.
-              </p>
-            </div>
-            <div className="csv-tools__grid">
-              <label>
-                CSV File
-                <input
-                  type="file"
-                  accept=".csv"
-                  onChange={(e) => {
-                    setCsvFile(e.target.files?.[0] ?? null);
-                    setCsvStatus(null);
-                  }}
-                />
-              </label>
-              <label>
-                Row to Prefill
-                <input
-                  type="number"
-                  min={1}
-                  value={csvRow}
-                  onChange={(e) => setCsvRow(e.target.value)}
-                />
-              </label>
-              <label>
-                Bulk Start Row
-                <input
-                  type="number"
-                  min={1}
-                  value={csvRange.start}
-                  onChange={(e) => setCsvRange((prev) => ({ ...prev, start: e.target.value }))}
-                />
-              </label>
-              <label>
-                Bulk End Row
-                <input
-                  type="number"
-                  min={Number(csvRange.start || "1")}
-                  value={csvRange.end}
-                  onChange={(e) => setCsvRange((prev) => ({ ...prev, end: e.target.value }))}
-                  placeholder="Last row"
-                />
-              </label>
-            </div>
-            <div className="csv-tools__actions">
-              <button type="button" onClick={handleCsvPrefill} disabled={csvWorking || !csvFile}>
-                Prefill Form
-              </button>
-              <button
-                type="button"
-                className="button-surface"
-                onClick={handleCsvBulkImport}
-                disabled={csvWorking || !csvFile}
-              >
-                Create Range
-              </button>
-            </div>
-            {csvStatus && <div className={`notice ${csvStatus.t}`}>{csvStatus.m}</div>}
-          </div>
         </form>
       </div>
       <div className="card orders-requests-card">

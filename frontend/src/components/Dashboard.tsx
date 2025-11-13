@@ -140,121 +140,137 @@ export function Dashboard({ onNavigate, kiosk }: Props) {
     },
   ];
 
+  const summaryCards = (
+    <div className={`dashboard-grid ${kiosk ? "kiosk-layout" : ""}`}>
+      {cards.map((card) => (
+        <button key={card.title} className={`dashboard-card ${kiosk ? "kiosk" : ""}`} onClick={card.action}>
+          <p>{card.title}</p>
+          <h2>{card.value}</h2>
+          {card.subtitle && <span className="stat-muted">{card.subtitle}</span>}
+        </button>
+      ))}
+    </div>
+  );
+
+  const panelSection =
+    metrics?.manufacturing?.items?.length || metrics?.orders?.items?.length ? (
+      <div className={`dashboard-panels ${kiosk ? "kiosk" : ""}`}>
+        <Panel
+          title="Manufacturing Flow"
+          items={metrics?.manufacturing?.items ?? []}
+          emptyLabel="No active builds"
+          onClick={() => onNavigate("manufacturing")}
+          kiosk={Boolean(kiosk)}
+          total={metrics?.manufacturing?.total ?? 0}
+          secondary={
+            metrics?.manufacturing ? `Urgent: ${metrics.manufacturing.urgent}` : ""
+          }
+        />
+        <Panel
+          title="Orders"
+          items={metrics?.orders?.items ?? []}
+          emptyLabel="No orders yet"
+          onClick={() => onNavigate("orders")}
+          kiosk={Boolean(kiosk)}
+          total={metrics?.orders?.total ?? 0}
+          secondary={metrics?.orders ? `Pending: ${metrics.orders.pending}` : ""}
+        />
+      </div>
+    ) : null;
+
+  const attendanceLog =
+    metrics?.attendanceHistory?.length ? (
+      <div className="card attendance-log-card">
+        <div className="panel-header">
+          <h4>Today&apos;s Attendance Log</h4>
+          <button className="refresh-btn" onClick={() => onNavigate("attendance")}>
+            View Full
+          </button>
+        </div>
+        <div className="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Check In</th>
+                <th>Check Out</th>
+              </tr>
+            </thead>
+            <tbody>
+              {metrics.attendanceHistory.slice(0, kiosk ? 10 : 6).map((entry) => (
+                <tr key={entry.id}>
+                  <td>{entry.student_name}</td>
+                  <td>{entry.check_in ? dayjs(entry.check_in).format("HH:mm") : "-"}</td>
+                  <td>{entry.check_out ? dayjs(entry.check_out).format("HH:mm") : "-"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    ) : null;
+
+  const kioskFormCard = (
+    <div className="card kiosk-form">
+      <div style={{ display: "flex", gap: 12, marginBottom: 12 }}>
+        <button
+          type="button"
+          className={scanMode === "in" ? "button-primary" : "refresh-btn"}
+          onClick={() => setScanMode("in")}
+        >
+          Check In
+        </button>
+        <button
+          type="button"
+          className={scanMode === "out" ? "button-primary" : "refresh-btn"}
+          onClick={() => setScanMode("out")}
+        >
+          Check Out
+        </button>
+        <button type="button" className="refresh-btn" onClick={load} disabled={loading}>
+          Refresh
+        </button>
+      </div>
+      <form onSubmit={handleScan}>
+        <label>
+          Scan or Type ID
+          <input
+            ref={idInput}
+            autoFocus
+            placeholder="Scan barcode or type student ID"
+            inputMode="numeric"
+          />
+        </label>
+        <label>
+          Note (optional)
+          <textarea ref={noteInput} rows={2} placeholder="Quick note" />
+        </label>
+        {scanStatus && <div className={`notice ${scanStatus.t}`}>{scanStatus.m}</div>}
+        <button type="submit">Record</button>
+      </form>
+    </div>
+  );
+
   return (
     <section className={kiosk ? "dashboard kiosk" : "dashboard"}>
-      <div className={`dashboard-grid ${kiosk ? "kiosk-layout" : ""}`}>
-        {cards.map((card) => (
-          <button key={card.title} className={`dashboard-card ${kiosk ? "kiosk" : ""}`} onClick={card.action}>
-            <p>{card.title}</p>
-            <h2>{card.value}</h2>
-            {card.subtitle && <span className="stat-muted">{card.subtitle}</span>}
-          </button>
-        ))}
-      </div>
-      {(metrics?.manufacturing?.items?.length || metrics?.orders?.items?.length) && (
-        <div className={`dashboard-panels ${kiosk ? "kiosk" : ""}`}>
-          <Panel
-            title="Manufacturing Flow"
-            items={metrics?.manufacturing?.items ?? []}
-            emptyLabel="No active builds"
-            onClick={() => onNavigate("manufacturing")}
-            kiosk={Boolean(kiosk)}
-            total={metrics?.manufacturing?.total ?? 0}
-            secondary={
-              metrics?.manufacturing
-                ? `Urgent: ${metrics.manufacturing.urgent}`
-                : ""
-            }
-          />
-          <Panel
-            title="Orders"
-            items={metrics?.orders?.items ?? []}
-            emptyLabel="No orders yet"
-            onClick={() => onNavigate("orders")}
-            kiosk={Boolean(kiosk)}
-            total={metrics?.orders?.total ?? 0}
-            secondary={
-              metrics?.orders ? `Pending: ${metrics.orders.pending}` : ""
-            }
-          />
-        </div>
-      )}
-      {metrics?.attendanceHistory?.length ? (
-        <div className="card" style={{ marginTop: 16 }}>
-          <div className="panel-header">
-            <h4>Today&apos;s Attendance Log</h4>
-            <button className="refresh-btn" onClick={() => onNavigate("attendance")}>
-              View Full
-            </button>
+      {kiosk ? (
+        <>
+          {kioskFormCard}
+          {attendanceLog}
+          {summaryCards}
+          {panelSection}
+        </>
+      ) : (
+        <>
+          {summaryCards}
+          {panelSection}
+          {attendanceLog}
+          <div className="card" style={{ marginTop: 16 }}>
+            <p style={{ marginTop: 0, color: "var(--text-muted)" }}>
+              Welcome back {user?.full_name}! Use the tabs above or click any card to jump directly into its workflow.
+            </p>
           </div>
-          <div className="table-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Check In</th>
-                  <th>Check Out</th>
-                </tr>
-              </thead>
-              <tbody>
-                {metrics.attendanceHistory.slice(0, kiosk ? 10 : 6).map((entry) => (
-                  <tr key={entry.id}>
-                    <td>{entry.student_name}</td>
-                    <td>{entry.check_in ? dayjs(entry.check_in).format("HH:mm") : "-"}</td>
-                    <td>{entry.check_out ? dayjs(entry.check_out).format("HH:mm") : "-"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      ) : null}
-      {kiosk && (
-        <div className="card kiosk-form">
-          <div style={{ display: "flex", gap: 12, marginBottom: 12 }}>
-            <button
-              type="button"
-              className={scanMode === "in" ? "button-primary" : "refresh-btn"}
-              onClick={() => setScanMode("in")}
-            >
-              Check In
-            </button>
-            <button
-              type="button"
-              className={scanMode === "out" ? "button-primary" : "refresh-btn"}
-              onClick={() => setScanMode("out")}
-            >
-              Check Out
-            </button>
-            <button type="button" className="refresh-btn" onClick={load} disabled={loading}>
-              Refresh
-            </button>
-          </div>
-          <form onSubmit={handleScan}>
-            <label>
-              Scan or Type ID
-              <input
-                ref={idInput}
-                autoFocus
-                placeholder="Scan barcode or type student ID"
-                inputMode="numeric"
-              />
-            </label>
-            <label>
-              Note (optional)
-              <textarea ref={noteInput} rows={2} placeholder="Quick note" />
-            </label>
-            {scanStatus && <div className={`notice ${scanStatus.t}`}>{scanStatus.m}</div>}
-            <button type="submit">Record</button>
-          </form>
-        </div>
-      )}
-      {!kiosk && (
-        <div className="card" style={{ marginTop: 16 }}>
-          <p style={{ marginTop: 0, color: "var(--text-muted)" }}>
-            Welcome back {user?.full_name}! Use the tabs above or click any card to jump directly into its workflow.
-          </p>
-        </div>
+        </>
       )}
     </section>
   );

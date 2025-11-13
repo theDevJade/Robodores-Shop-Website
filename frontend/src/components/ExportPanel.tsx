@@ -42,20 +42,9 @@ export function ExportPanel({ section, defaultName, helper, importConfig }: Prop
   const [rangeStart, setRangeStart] = useState<string>("1");
   const [rangeEnd, setRangeEnd] = useState<string>("");
   const [importAllRows, setImportAllRows] = useState(true);
-  const [importModalOpen, setImportModalOpen] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [csvTab, setCsvTab] = useState<"export" | "import">("export");
   const importInputRef = useRef<HTMLInputElement | null>(null);
-
-  const ensureFileSelected = () => {
-    if (importFile) return true;
-    setImportStatus({ t: "err", m: "Choose a CSV file first." });
-    return false;
-  };
-
-  const openImportModal = () => {
-    if (!ensureFileSelected()) return;
-    setImportStatus(null);
-    setImportModalOpen(true);
-  };
 
   async function handleExport() {
     setDownloading(true);
@@ -117,7 +106,6 @@ export function ExportPanel({ section, defaultName, helper, importConfig }: Prop
       setImportStatus({ t: "ok", m: "Import complete" });
       setImportFile(null);
       if (importInputRef.current) importInputRef.current.value = "";
-      setImportModalOpen(false);
     } catch (error: any) {
       setImportStatus({
         t: "err",
@@ -128,110 +116,146 @@ export function ExportPanel({ section, defaultName, helper, importConfig }: Prop
     }
   }
 
+  const closeModal = () => {
+    setModalOpen(false);
+    setCsvTab("export");
+    setStatus(null);
+    setImportStatus(null);
+    setImportFile(null);
+    setImportAllRows(true);
+    setRangeStart("1");
+    setRangeEnd("");
+    if (importInputRef.current) importInputRef.current.value = "";
+  };
+
   return (
-    <div className="export-panel">
-      <div>
-        <p className="export-panel__title">Download CSV</p>
-        {helper && <small className="export-panel__helper">{helper}</small>}
-      </div>
-      <div className="export-panel__controls">
-        <input
-          type="text"
-          value={filename}
-          onChange={(e) => setFilename(e.target.value)}
-          placeholder="attendance-report"
-        />
-        <button type="button" onClick={handleExport} disabled={downloading}>
-          {downloading ? "Preparing..." : "Export CSV"}
-        </button>
-      </div>
-      {status && <div className="notice ok" style={{ marginTop: 8 }}>{status}</div>}
-      {importConfig && (
-        <div className="export-panel__import">
+    <>
+      <div className="export-panel">
+        <div className="export-panel__header">
           <div>
-            <p className="export-panel__title">{importConfig.label ?? "Import CSV"}</p>
-            {importConfig.helper && <small className="export-panel__helper">{importConfig.helper}</small>}
+            <p className="export-panel__title">CSV Options</p>
+            {helper && <small className="export-panel__helper">{helper}</small>}
           </div>
-          <div className="export-panel__fileRow">
-            <input
-              ref={importInputRef}
-              type="file"
-              accept=".csv"
-              onChange={(e) => {
-                setImportFile(e.target.files?.[0] ?? null);
-                setImportStatus(null);
-                setImportModalOpen(false);
-              }}
-            />
-            <button type="button" onClick={openImportModal} disabled={importing}>
-              Import CSV
-            </button>
-          </div>
-          {importStatus && <div className={`notice ${importStatus.t}`} style={{ marginTop: 8 }}>{importStatus.m}</div>}
+          <div className="csv-note">CSV files are spreadsheets from Excel, Sheets, etc.</div>
+          <button type="button" className="button-surface" onClick={() => { setCsvTab("export"); setModalOpen(true); }}>
+            CSV Options
+          </button>
         </div>
-      )}
-      {importConfig && importModalOpen && (
+      </div>
+      {modalOpen && (
         <div className="modal-backdrop">
-          <div className="modal card">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "1rem" }}>
+          <div className="modal card csv-modal">
+            <div className="csv-modal__top">
               <div>
-                <p className="brand-text" style={{ margin: 0, textTransform: "uppercase", letterSpacing: "0.2em" }}>
-                  CSV Import
-                </p>
-                <h3 style={{ margin: "0.2rem 0 0" }}>{importConfig.label ?? "Import CSV"}</h3>
+                <p className="export-panel__title">Data Tools</p>
+                <h3>CSV Options</h3>
               </div>
-              <button className="refresh-btn" type="button" onClick={() => setImportModalOpen(false)}>
+              <button className="refresh-btn" type="button" onClick={closeModal}>
                 Close
               </button>
             </div>
-            {importConfig.supportsRange && (
-              <label className="import-toggle">
-                <input
-                  type="checkbox"
-                  checked={importAllRows}
-                  onChange={(e) => setImportAllRows(e.target.checked)}
-                />
-                <span>Use all rows</span>
-              </label>
-            )}
-            {importConfig.supportsRange && !importAllRows ? (
-              <div className="export-panel__range export-panel__range--modal" style={{ marginTop: "1rem" }}>
-                <label>
-                  From row
-                  <input
-                    type="number"
-                    min={1}
-                    value={rangeStart}
-                    onChange={(e) => setRangeStart(e.target.value)}
-                  />
-                </label>
-                <label>
-                  To row
-                  <input
-                    type="number"
-                    min={Number(rangeStart || "1")}
-                    value={rangeEnd}
-                    onChange={(e) => setRangeEnd(e.target.value)}
-                    placeholder="End"
-                  />
-                </label>
-              </div>
-            ) : (
-              <p className="stat-muted" style={{ marginTop: "1rem" }}>
-                Import will include every row in the CSV.
-              </p>
-            )}
-            <div className="form-actions" style={{ marginTop: "1rem" }}>
-              <button type="button" className="button-primary" onClick={handleImport} disabled={importing}>
-                {importing ? "Importing..." : "Import"}
+            <div className="csv-modal__tabs">
+              <button
+                type="button"
+                className={csvTab === "export" ? "active" : ""}
+                onClick={() => setCsvTab("export")}
+              >
+                Export
               </button>
-              <button type="button" onClick={() => setImportModalOpen(false)}>
-                Cancel
+              <button
+                type="button"
+                className={csvTab === "import" ? "active" : ""}
+                disabled={!importConfig}
+                onClick={() => importConfig && setCsvTab("import")}
+              >
+                Import
               </button>
             </div>
+            {csvTab === "export" && (
+              <div className="csv-modal__content">
+                <label>
+                  File name
+                  <input
+                    type="text"
+                    value={filename}
+                    onChange={(e) => setFilename(e.target.value)}
+                    placeholder={defaultName}
+                  />
+                </label>
+                <button type="button" className="button-primary" onClick={handleExport} disabled={downloading}>
+                  {downloading ? "Preparing..." : "Download CSV"}
+                </button>
+                {status && <div className="notice ok">{status}</div>}
+              </div>
+            )}
+            {csvTab === "import" && importConfig ? (
+              <div className="csv-modal__content">
+                <label>
+                  CSV file
+                  <input
+                    ref={importInputRef}
+                    type="file"
+                    accept=".csv"
+                    onChange={(e) => {
+                      setImportFile(e.target.files?.[0] ?? null);
+                      setImportStatus(null);
+                    }}
+                  />
+                  <small className="export-panel__helper">Use .csv spreadsheet files exported from Excel/Sheets.</small>
+                </label>
+                {importConfig.supportsRange && (
+                  <label className="import-toggle">
+                    <input
+                      type="checkbox"
+                      checked={importAllRows}
+                      onChange={(e) => setImportAllRows(e.target.checked)}
+                    />
+                    <span>Use all rows</span>
+                  </label>
+                )}
+                {importConfig.supportsRange && !importAllRows ? (
+                  <div className="export-panel__range export-panel__range--modal">
+                    <label>
+                      From row
+                      <input
+                        type="number"
+                        min={1}
+                        value={rangeStart}
+                        onChange={(e) => setRangeStart(e.target.value)}
+                      />
+                    </label>
+                    <label>
+                      To row
+                      <input
+                        type="number"
+                        min={Number(rangeStart || "1")}
+                        value={rangeEnd}
+                        onChange={(e) => setRangeEnd(e.target.value)}
+                        placeholder="End"
+                      />
+                    </label>
+                  </div>
+                ) : (
+                  importConfig.supportsRange && <p className="stat-muted">Entire file will be imported.</p>
+                )}
+                {!importConfig.supportsRange && (
+                  <p className="stat-muted">Import will include every row in the CSV.</p>
+                )}
+                <button type="button" className="button-primary" onClick={handleImport} disabled={importing}>
+                  {importing ? "Importing..." : "Import CSV"}
+                </button>
+                {importStatus && <div className={`notice ${importStatus.t}`}>{importStatus.m}</div>}
+              </div>
+            ) : (
+              csvTab === "import" && (
+                <div className="csv-modal__content">
+                  <p className="stat-muted">Import is not available for this section.</p>
+                </div>
+              )
+            )}
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }

@@ -39,6 +39,16 @@ const TYPE_LABELS: Record<InventoryPartType, string> = {
   cots: "COTS",
 };
 
+const SORT_OPTIONS: Array<{ key: SortKey; label: string }> = [
+  { key: "part_name", label: "Name" },
+  { key: "part_type", label: "Type" },
+  { key: "sku", label: "SKU" },
+  { key: "location", label: "Location" },
+  { key: "quantity", label: "Quantity" },
+  { key: "reorder_threshold", label: "Reorder threshold" },
+  { key: "updated_at", label: "Last updated" },
+];
+
 export function InventoryTab({ canEdit }: Props) {
   const { user } = useAuth();
   const [items, setItems] = useState<InventoryItem[]>([]);
@@ -54,6 +64,7 @@ export function InventoryTab({ canEdit }: Props) {
     key: "part_name",
     direction: "asc",
   });
+  const [expandedTags, setExpandedTags] = useState<Record<number, boolean>>({});
 
   useEffect(() => {
     fetchItems();
@@ -132,14 +143,13 @@ export function InventoryTab({ canEdit }: Props) {
     return sorted;
   }, [items, typeFilter, locationFilter, sort]);
 
-  function requestSort(key: SortKey) {
-    setSort((prev) => {
-      if (prev.key === key) {
-        return { key, direction: prev.direction === "asc" ? "desc" : "asc" };
-      }
-      return { key, direction: "asc" };
-    });
-  }
+  const updateSortKey = (key: SortKey) => {
+    setSort((prev) => ({ key, direction: prev.key === key ? prev.direction : "asc" }));
+  };
+
+  const toggleSortDirection = () => {
+    setSort((prev) => ({ ...prev, direction: prev.direction === "asc" ? "desc" : "asc" }));
+  };
 
   async function adjust(itemId: number, delta: number) {
     await api.post(`/inventory/items/${itemId}/adjust`, { delta, reason: "manual" });
@@ -262,8 +272,8 @@ export function InventoryTab({ canEdit }: Props) {
               </button>
             </div>
           </div>
-          <div className="inventory-toolbar__filters">
-            <label>
+          <div className="inventory-toolbar__filters inventory-toolbar__filters--thirds">
+            <label className="inventory-toolbar__field inventory-toolbar__field--third">
               <span>Part type</span>
               <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value as InventoryPartType | "all")}>
                 <option value="all">All types</option>
@@ -271,7 +281,7 @@ export function InventoryTab({ canEdit }: Props) {
                 <option value="cots">COTS</option>
               </select>
             </label>
-            <label>
+            <label className="inventory-toolbar__field inventory-toolbar__field--third">
               <span>Location</span>
               <select value={locationFilter} onChange={(e) => setLocationFilter(e.target.value)}>
                 <option value="all">All locations</option>
@@ -283,42 +293,38 @@ export function InventoryTab({ canEdit }: Props) {
                 ))}
               </select>
             </label>
+            <label className="inventory-toolbar__field inventory-toolbar__field--third sort-field">
+              <span>Sort by</span>
+              <div className="sort-field__controls">
+                <select value={sort.key} onChange={(e) => updateSortKey(e.target.value as SortKey)}>
+                  {SORT_OPTIONS.map((option) => (
+                    <option key={option.key} value={option.key}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  className="refresh-btn sort-direction-btn"
+                  onClick={toggleSortDirection}
+                  aria-label="Toggle sort direction"
+                >
+                  {sort.direction === "asc" ? "Asc" : "Desc"}
+                </button>
+              </div>
+            </label>
           </div>
         </div>
         <div className="table-scroll inventory-table-scroll">
           <table>
             <thead>
               <tr>
-                <th>
-                  <button type="button" className="table-sort-btn" onClick={() => requestSort("part_name")}>
-                    Name {sort.key === "part_name" && <SortIndicator direction={sort.direction} />}
-                  </button>
-                </th>
-                <th>
-                  <button type="button" className="table-sort-btn" onClick={() => requestSort("part_type")}>
-                    Type {sort.key === "part_type" && <SortIndicator direction={sort.direction} />}
-                  </button>
-                </th>
-                <th>
-                  <button type="button" className="table-sort-btn" onClick={() => requestSort("sku")}>
-                    SKU {sort.key === "sku" && <SortIndicator direction={sort.direction} />}
-                  </button>
-                </th>
-                <th>
-                  <button type="button" className="table-sort-btn" onClick={() => requestSort("location")}>
-                    Location {sort.key === "location" && <SortIndicator direction={sort.direction} />}
-                  </button>
-                </th>
-                <th>
-                  <button type="button" className="table-sort-btn" onClick={() => requestSort("quantity")}>
-                    Qty {sort.key === "quantity" && <SortIndicator direction={sort.direction} />}
-                  </button>
-                </th>
-                <th>
-                  <button type="button" className="table-sort-btn" onClick={() => requestSort("updated_at")}>
-                    Updated {sort.key === "updated_at" && <SortIndicator direction={sort.direction} />}
-                  </button>
-                </th>
+                <th>Name</th>
+                <th>Type</th>
+                <th>SKU</th>
+                <th>Location</th>
+                <th>Qty</th>
+                <th>Updated</th>
                 <th className="table-actions inventory-actions-header">Actions</th>
               </tr>
             </thead>
@@ -329,28 +335,55 @@ export function InventoryTab({ canEdit }: Props) {
                   typeof item.reorder_threshold === "number" && item.reorder_threshold >= 0
                     ? item.quantity <= item.reorder_threshold
                     : false;
+                const tags = item.tags ? item.tags.split(",").map((tag) => tag.trim()).filter(Boolean) : [];
+                const tagsExpanded = expandedTags[item.id];
                 return (
                   <tr key={item.id}>
-                    <td>
+                    <td title={item.part_name}>
                       <div className="inventory-name-cell">
                         <strong>{item.part_name}</strong>
-                        {item.tags && (
-                          <div className="tag-list">
-                            {item.tags.split(",").map((tag) => (
-                              <span key={tag.trim()} className="tag-chip">
-                                {tag.trim()}
-                              </span>
-                            ))}
+                        {tags.length > 0 && (
+                          <div className="inventory-tags">
+                            {tagsExpanded ? (
+                              <>
+                                <div className="tag-grid">
+                                  {tags.map((tag) => (
+                                    <span key={tag} className="tag-chip">
+                                      {tag}
+                                    </span>
+                                  ))}
+                                </div>
+                                <button
+                                  type="button"
+                                  className="mini-link inventory-tag-toggle"
+                                  onClick={() => setExpandedTags((prev) => ({ ...prev, [item.id]: false }))}
+                                >
+                                  Hide tags
+                                </button>
+                              </>
+                            ) : (
+                              <button
+                                type="button"
+                                className="mini-link inventory-tag-toggle"
+                                onClick={() => setExpandedTags((prev) => ({ ...prev, [item.id]: true }))}
+                              >
+                                Show tags ({tags.length})
+                              </button>
+                            )}
                           </div>
                         )}
                       </div>
                     </td>
-                    <td>
+                    <td title={TYPE_LABELS[partType]}>
                       <span className={`type-pill type-${partType}`}>{TYPE_LABELS[partType]}</span>
                     </td>
-                    <td>{item.sku ?? "—"}</td>
-                    <td>{item.location ?? "Unassigned"}</td>
-                    <td>
+                    <td className="inventory-meta" title={item.sku ?? "—"}>
+                      {item.sku ?? "—"}
+                    </td>
+                    <td className="inventory-meta" title={item.location ?? "Unassigned"}>
+                      {item.location ?? "Unassigned"}
+                    </td>
+                    <td title={`${item.quantity}`}>
                       <div className="inventory-qty">
                         <span className={lowOnHand ? "low" : undefined}>{item.quantity}</span>
                         {typeof item.reorder_threshold === "number" && (
@@ -368,7 +401,9 @@ export function InventoryTab({ canEdit }: Props) {
                         )}
                       </div>
                     </td>
-                    <td>{new Date(item.updated_at).toLocaleDateString()}</td>
+                    <td className="inventory-meta" title={new Date(item.updated_at).toLocaleString()}>
+                      {new Date(item.updated_at).toLocaleDateString()}
+                    </td>
                     <td className="table-actions inventory-actions">
                       <button type="button" onClick={() => setOrderItem(item)}>
                         Submit order
@@ -395,10 +430,6 @@ export function InventoryTab({ canEdit }: Props) {
       </div>
     </section>
   );
-}
-
-function SortIndicator({ direction }: { direction: "asc" | "desc" }) {
-  return <span className="sort-indicator">{direction === "asc" ? "↑" : "↓"}</span>;
 }
 
 function AddItemModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => Promise<void> | void }) {

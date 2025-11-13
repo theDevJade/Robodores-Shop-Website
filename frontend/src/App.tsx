@@ -67,9 +67,20 @@ export default function App() {
   }
 
   useEffect(() => {
+    if (!user?.id) return;
+    const stored = localStorage.getItem(`portal-theme-user-${user.id}`) as "dark" | "light" | null;
+    if (stored && (stored === "dark" || stored === "light")) {
+      setTheme(stored);
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
     localStorage.setItem("portal-theme", theme);
-  }, [theme]);
+    if (user?.id) {
+      localStorage.setItem(`portal-theme-user-${user.id}`, theme);
+    }
+  }, [theme, user?.id]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -88,6 +99,15 @@ export default function App() {
     if (!user) return [];
     return tabs.filter((tab) => tab.roles.includes(user.role));
   }, [user]);
+
+  const orderedTabs = useMemo(() => {
+    if (!kioskMode) return visibleTabs;
+    const attendanceTab = visibleTabs.find((tab) => tab.id === "attendance");
+    if (!attendanceTab) return visibleTabs;
+    return [attendanceTab, ...visibleTabs.filter((tab) => tab.id !== "attendance")];
+  }, [visibleTabs, kioskMode]);
+
+  const navTabs = useMemo(() => orderedTabs.filter((tab) => tab.id !== "admin"), [orderedTabs]);
 
   const toggleTheme = () => setTheme((prev) => (prev === "dark" ? "light" : "dark"));
 
@@ -142,21 +162,32 @@ export default function App() {
   return (
     <div className="app-shell">
       <header className="top-bar">
-        <div className="brand">
-          <img src={logo} alt="Robodores 4255 logo" />
-          <div className="brand-text">
-            <p>Robotics Shop Portal</p>
-            <h1>Robodores 4255</h1>
+        <div className="top-bar-left">
+          <div className="brand">
+            <img src={logo} alt="Robodores 4255 logo" />
+            <div className="brand-text">
+              <p>Robotics Shop Portal</p>
+              <h1>Robodores 4255</h1>
+            </div>
           </div>
         </div>
         <div className="top-actions">
-          <button type="button" className="refresh-btn" onClick={() => setKioskMode((prev) => !prev)}>
+          <button
+            type="button"
+            className={`refresh-btn kiosk-toggle top-actions__kiosk ${kioskMode ? "active" : ""}`}
+            onClick={() => setKioskMode((prev) => !prev)}
+          >
             {kioskMode ? "Exit Kiosk" : "Kiosk Mode"}
           </button>
-          <button className="theme-toggle" onClick={toggleTheme} aria-label="Toggle theme">
-            {theme === "dark" ? <MoonIcon /> : <SunIcon />}
-            <span>{theme === "dark" ? "Dark" : "Light"} mode</span>
-          </button>
+          {user?.role === "admin" && (
+            <button
+              type="button"
+              className={`refresh-btn admin-nav-btn ${active === "admin" ? "active" : ""}`}
+              onClick={() => setActive("admin")}
+            >
+              {active === "admin" ? "Admin (Open)" : "Admin"}
+            </button>
+          )}
           <div className="profile-chip">
             <div className="profile-chip-info">
               <span>{user.full_name}</span>
@@ -175,7 +206,7 @@ export default function App() {
       </header>
       {!isCompactNav && (
         <nav className="tab-bar" role="tablist" aria-label="Primary navigation">
-          {visibleTabs.map((tab) => (
+          {navTabs.map((tab) => (
             <button
               key={tab.id}
               type="button"
@@ -200,11 +231,13 @@ export default function App() {
           user={user}
           refreshUser={refreshUser}
           onClose={() => setSettingsOpen(false)}
+          theme={theme}
+          onThemeChange={setTheme}
         />
       )}
       {isCompactNav && (
         <div className="mobile-tab-tray" role="tablist" aria-label="Primary navigation">
-          {visibleTabs.map((tab) => (
+          {navTabs.map((tab) => (
             <button
               key={`mobile-${tab.id}`}
               type="button"
@@ -249,10 +282,14 @@ function SettingsModal({
   user,
   refreshUser,
   onClose,
+  theme,
+  onThemeChange,
 }: {
   user: User;
   refreshUser: () => Promise<User | null>;
   onClose: () => void;
+  theme: "dark" | "light";
+  onThemeChange: (theme: "dark" | "light") => void;
 }) {
   const [form, setForm] = useState({
     full_name: user.full_name,
@@ -322,6 +359,26 @@ function SettingsModal({
             New Password
             <input type="password" value={form.password} onChange={(e) => updateField("password", e.target.value)} placeholder="Leave blank to keep current" />
           </label>
+          <div className="theme-toggle-row">
+            <span>Theme</span>
+            <div className="theme-toggle-controls">
+              <button
+                type="button"
+                className={theme === "dark" ? "active" : ""}
+                onClick={() => onThemeChange("dark")}
+              >
+                Dark
+              </button>
+              <button
+                type="button"
+                className={theme === "light" ? "active" : ""}
+                onClick={() => onThemeChange("light")}
+              >
+                Light
+              </button>
+            </div>
+            <small className="theme-note">Saved for your account across devices.</small>
+          </div>
           {status && <div className={`notice ${status.t}`}>{status.m}</div>}
           <button type="submit" disabled={saving}>{saving ? "Saving..." : "Save Changes"}</button>
         </form>
