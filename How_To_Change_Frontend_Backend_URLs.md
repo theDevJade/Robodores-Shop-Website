@@ -9,7 +9,7 @@ This guide shows exactly where to update hostnames, ports, and API base URLs for
 
 ---
 
-## 1) Frontend ? Backend API base URL
+## 1) Frontend ? Backend API base URLg
 - File: `frontend/src/api.ts:3`
   - What: Default and env-driven API base.
   - Change: Prefer an environment variable via Vite, or replace the default fallback.

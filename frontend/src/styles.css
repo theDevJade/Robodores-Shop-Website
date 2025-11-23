@@ -655,6 +655,29 @@ textarea:focus {
   box-shadow: 0 0 0 2px rgba(142, 224, 181, 0.25);
 }
 
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background: var(--bg-surface);
+  padding-right: 2.6rem;
+  position: relative;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--text-muted) 50%),
+    linear-gradient(135deg, var(--text-muted) 50%, transparent 50%),
+    linear-gradient(var(--brand) 0 0);
+  background-position:
+    calc(100% - 1rem) calc(50% - 0.15rem),
+    calc(100% - 0.7rem) calc(50% - 0.15rem),
+    calc(100% - 1.4rem) 50%;
+  background-size: 6px 6px, 6px 6px, 1px 65%;
+  background-repeat: no-repeat;
+}
+
+select::-ms-expand {
+  display: none;
+}
+
 button {
   border-radius: 12px;
   border: 1px solid transparent;
@@ -1569,12 +1592,26 @@ td .view-note-btn {
 .kiosk-overlay {
   position: fixed;
   inset: 0;
-  background: var(--bg);
+  background:
+    radial-gradient(circle at 18% 18%, rgba(142, 224, 181, 0.25), transparent 55%),
+    radial-gradient(circle at 78% 0%, rgba(40, 104, 80, 0.3), transparent 45%),
+    linear-gradient(140deg, color-mix(in srgb, var(--bg) 90%, rgba(10, 40, 30, 0.9)), var(--bg));
   z-index: 2000;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: calc(2rem * var(--viewport-scale));
+  overflow: hidden;
+}
+
+.kiosk-overlay::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg width='360' height='360' viewBox='0 0 360 360' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='rgba(142,224,181,0.18)' stroke-width='1'%3E%3Cpath d='M0 120h30l30-30h60l30 30h60l30-30h60l30 30h30M0 240h45l30-30h30l30 30h60l30-30h60l30 30h30l30-30h30l30 30h15'/%3E%3Ccircle cx='30' cy='30' r='5'/%3E%3Ccircle cx='180' cy='150' r='6'/%3E%3Ccircle cx='330' cy='40' r='4'/%3E%3Cg stroke-dasharray='6 10'%3E%3Cpath d='M0 0l360 360M360 0L0 360'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  opacity: 0.28;
+  mix-blend-mode: screen;
+  pointer-events: none;
 }
 
 .kiosk-panel {
@@ -1584,10 +1621,14 @@ td .view-note-btn {
   display: flex;
   flex-direction: column;
   gap: calc(1rem * var(--viewport-scale));
-  background: var(--bg);
-  border-radius: 0;
-  border: none;
+  background: color-mix(in srgb, var(--bg-surface) 92%, rgba(0, 0, 0, 0.25));
+  border-radius: calc(24px * var(--viewport-scale));
+  border: 1px solid var(--border-strong);
   padding: calc(2rem * var(--viewport-scale)) clamp(1rem, 5vw, 3rem);
+  box-shadow: 0 35px 90px rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(22px);
+  position: relative;
+  isolation: isolate;
 }
 .subtabs {
   display: flex;

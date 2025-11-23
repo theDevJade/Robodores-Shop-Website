@@ -1,0 +1,36 @@
+Run with Docker on Ubuntu
+-------------------------
+
+Prereqs
+- Install Docker Engine + Compose v2:
+  sudo apt update && sudo apt install -y ca-certificates curl gnupg
+  curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+  echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list
+  sudo apt update && sudo apt install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+- Add your user to the docker group so you can run without sudo:
+  sudo usermod -aG docker $USER
+  # log out/in or run: newgrp docker
+
+Prep the app
+- From the repo root:
+  cp backend/.env.example backend/.env
+  # edit backend/.env if you want to change SECRET_KEY, DATABASE_URL, UPLOAD_ROOT, etc.
+
+Start the stack
+- From the repo root:
+  docker compose up --build
+  # add -d to detach
+
+Use it
+- Frontend: http://localhost:5173
+- Backend docs: http://localhost:8000/docs
+- Uploaded files live in the named volume backend_uploads; remove/reset with:
+  docker volume rm robot-shop-portal_backend_uploads
+
+LAN access
+- Browse from another device: http://<host-LAN-IP>:5173
+- If API calls should hit your host IP instead of localhost, set VITE_API_URL in docker-compose.yml (frontend service) to:
+  http://<host-LAN-IP>:8000
+- Restart after env changes:
+  docker compose down
+  docker compose up --build
