@@ -47,4 +47,36 @@ Serve on your Wi-Fi (LAN)
 Common LAN pitfalls
 - Use your real LAN IP (typically 192.168.x.x or 10.x.x.x), not the Docker bridge IP (often 172.17.x.x).
 - Do not include subnet notation; use http://192.168.1.50:8000 not http://192.168.1.50/16:8000.
-- The frontend URL in your browser should stay http://<LAN-IP>:5173; the frontend’s VITE_API_URL should be http://<LAN-IP>:8000.
+- The frontend URL in your browser should stay http://<LAN-IP>:5173; the frontend's VITE_API_URL should be http://<LAN-IP>:8000.
+
+Run on startup (systemd)
+- Pick a fixed repo path (example: /opt/robot-shop-portal) and ensure your user is in the docker group.
+- Create the service (replace YOUR_USERNAME and the path if different):
+  sudo tee /etc/systemd/system/robot-portal.service > /dev/null <<'EOF'
+  [Unit]
+  Description=Robot Shop Portal (Docker Compose)
+  Requires=docker.service
+  After=docker.service network.target
+
+  [Service]
+  Type=oneshot
+  RemainAfterExit=yes
+  WorkingDirectory=/opt/robot-shop-portal
+  ExecStart=/usr/bin/docker compose up -d
+  ExecStop=/usr/bin/docker compose down
+  User=YOUR_USERNAME
+  Group=docker
+
+  [Install]
+  WantedBy=multi-user.target
+  EOF
+- Enable and start at boot:
+  sudo systemctl daemon-reload
+  sudo systemctl enable --now robot-portal
+- Check status/logs:
+  sudo systemctl status robot-portal
+  docker compose -f /opt/robot-shop-portal/docker-compose.yml ps
+- Update/rebuild later:
+  cd /opt/robot-shop-portal
+  docker compose pull
+  docker compose up -d --build
