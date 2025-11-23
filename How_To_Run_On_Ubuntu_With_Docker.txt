@@ -34,3 +34,12 @@ LAN access
 - Restart after env changes:
   docker compose down
   docker compose up --build
+
+Serve on your Wi-Fi (LAN)
+- Find your host LAN IP (Ubuntu): hostname -I | awk '{print $1}' (example: 192.168.1.50)
+- In docker-compose.yml (frontend service), set VITE_API_URL to your host IP: http://192.168.1.50:8000
+- Recreate containers so env changes apply:
+  docker compose down
+  docker compose up --build
+- From another device on the same Wi-Fi, open: http://192.168.1.50:5173
+- Open firewall if needed: sudo ufw allow 5173/tcp and sudo ufw allow 8000/tcp
