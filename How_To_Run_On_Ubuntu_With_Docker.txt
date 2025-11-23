@@ -43,3 +43,8 @@ Serve on your Wi-Fi (LAN)
   docker compose up --build
 - From another device on the same Wi-Fi, open: http://192.168.1.50:5173
 - Open firewall if needed: sudo ufw allow 5173/tcp and sudo ufw allow 8000/tcp
+
+Common LAN pitfalls
+- Use your real LAN IP (typically 192.168.x.x or 10.x.x.x), not the Docker bridge IP (often 172.17.x.x).
+- Do not include subnet notation; use http://192.168.1.50:8000 not http://192.168.1.50/16:8000.
+- The frontend URL in your browser should stay http://<LAN-IP>:5173; the frontend’s VITE_API_URL should be http://<LAN-IP>:8000.
