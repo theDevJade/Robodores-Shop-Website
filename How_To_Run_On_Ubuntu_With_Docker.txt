@@ -50,8 +50,11 @@ Common LAN pitfalls
 - The frontend URL in your browser should stay http://<LAN-IP>:5173; the frontend's VITE_API_URL should be http://<LAN-IP>:8000.
 
 Run on startup (systemd)
-- Pick a fixed repo path (example: /opt/robot-shop-portal) and ensure your user is in the docker group.
-- Create the service (replace YOUR_USERNAME and the path if different):
+- Pick a fixed repo path on the Ubuntu box (example: /opt/robot-shop-portal). If you cloned elsewhere, use that exact path.
+- Make sure your Linux user is in the docker group (see "Prereqs").
+- Create the service file (replace BOTH placeholders):
+  - Replace /opt/robot-shop-portal with your actual repo path.
+  - Replace YOUR_USERNAME with your Ubuntu login user (the one that can run docker).
   sudo tee /etc/systemd/system/robot-portal.service > /dev/null <<'EOF'
   [Unit]
   Description=Robot Shop Portal (Docker Compose)
@@ -70,13 +73,13 @@ Run on startup (systemd)
   [Install]
   WantedBy=multi-user.target
   EOF
-- Enable and start at boot:
+- Enable and start at boot (run these after creating the file):
   sudo systemctl daemon-reload
   sudo systemctl enable --now robot-portal
-- Check status/logs:
+- Check status/logs (update the path if you used a different one):
   sudo systemctl status robot-portal
   docker compose -f /opt/robot-shop-portal/docker-compose.yml ps
 - Update/rebuild later:
-  cd /opt/robot-shop-portal
+  cd /opt/robot-shop-portal   # or your actual repo path
   docker compose pull
   docker compose up -d --build
