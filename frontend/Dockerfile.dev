@@ -3,10 +3,11 @@ FROM node:20-alpine
 WORKDIR /app
 
 COPY package.json package-lock.json* pnpm-lock.yaml* yarn.lock* ./
-RUN npm install
+RUN npm install --include=dev
 
 COPY . .
 
-EXPOSE 5173
+ENV FRONTEND_PORT=5173
+EXPOSE ${FRONTEND_PORT}
 
-CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]
+CMD sh -c "npx vite --host 0.0.0.0 --port ${FRONTEND_PORT}"

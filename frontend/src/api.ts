@@ -1,19 +1,27 @@
 import axios, { AxiosRequestHeaders } from "axios";
 
 const ENV_BASE = (import.meta as any).env.VITE_API_URL as string | undefined;
+const ENV_API_PORT = (import.meta as any).env.VITE_API_PORT as string | undefined;
 
 function resolveApiBase(): string {
-  const fallback = "http://localhost:8000";
+  const defaultBackendPort = ENV_API_PORT || "8000";
+  const fallback = `http://localhost:${defaultBackendPort}`;
   let base = ENV_BASE ?? fallback;
   if (typeof window !== "undefined") {
-    const { protocol, hostname } = window.location;
+    const { protocol, hostname, port } = window.location;
     const isLocalHost = hostname === "localhost" || hostname === "127.0.0.1";
     const envPointsToLoopback = /(^|\/)localhost(?=[:/]|$)|(^|\/)127\.0\.0\.1(?=[:/]|$)/i.test(base);
+
+    // Behind a reverse proxy (Coolify, etc.): use same origin without port
+    // unless an explicit API port is configured
+    const apiPort = ENV_API_PORT || (isLocalHost ? defaultBackendPort : "");
+    const portSuffix = apiPort ? `:${apiPort}` : "";
+
     if (!isLocalHost && envPointsToLoopback) {
-      return `${protocol}//${hostname}:8000`;
+      return `${protocol}//${hostname}${portSuffix}`;
     }
     if ((ENV_BASE ?? "").toLowerCase() === "auto") {
-      return `${protocol}//${hostname}:8000`;
+      return `${protocol}//${hostname}${portSuffix}`;
     }
   }
   return base;
