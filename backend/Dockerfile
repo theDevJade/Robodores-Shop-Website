@@ -10,8 +10,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY app ./app
 
-# Support PORT env variable for Coolify
+# Support PORT env variable for Coolify (default 8000)
 ENV PORT=8000
-EXPOSE ${PORT}
+# EXPOSE is informational - actual port is set by CMD using PORT env var
+EXPOSE 8000
 
+# Use shell form to allow PORT variable expansion
 CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT}

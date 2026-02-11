@@ -27,9 +27,10 @@ RUN npm ci
 COPY --from=builder /app/dist ./dist
 COPY vite.config.ts tsconfig.json tsconfig.node.json ./
 
-# Support PORT env variable for Coolify
+# Support PORT env variable for Coolify (default 5173)
 ENV PORT=5173
-EXPOSE ${PORT}
+# EXPOSE is informational - actual port is set by CMD using PORT env var
+EXPOSE 5173
 
 # Use vite preview to serve the built app with shell form to expand PORT
 CMD npm run preview -- --host 0.0.0.0 --port ${PORT}

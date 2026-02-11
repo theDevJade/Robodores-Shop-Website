@@ -9,9 +9,10 @@ RUN npm ci
 
 COPY . .
 
-# Support PORT env variable for Coolify
+# Support PORT env variable for Coolify (default 5173)
 ENV PORT=5173
-EXPOSE ${PORT}
+# EXPOSE is informational - actual port is set by CMD using PORT env var
+EXPOSE 5173
 
 # Use shell form to allow PORT variable expansion
 CMD npm run dev -- --host 0.0.0.0 --port ${PORT}
