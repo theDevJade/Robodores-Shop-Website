@@ -19,15 +19,17 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Install serve to serve the built static files
-RUN npm install -g serve
+# Copy package files and install vite for preview
+COPY package.json package-lock.json* ./
+RUN npm ci
 
 # Copy built assets from builder
 COPY --from=builder /app/dist ./dist
+COPY vite.config.ts tsconfig.json tsconfig.node.json ./
 
 # Support PORT env variable for Coolify
 ENV PORT=5173
 EXPOSE ${PORT}
 
-# Serve the built app on the specified port
-CMD serve -s dist -l ${PORT}
+# Use vite preview to serve the built app with shell form to expand PORT
+CMD npm run preview -- --host 0.0.0.0 --port ${PORT}

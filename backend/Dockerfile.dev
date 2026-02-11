@@ -14,4 +14,5 @@ COPY app ./app
 ENV PORT=8000
 EXPOSE ${PORT}
 
-CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT}
+# Use shell form to allow PORT variable expansion, with --reload for dev
+CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT} --reload
