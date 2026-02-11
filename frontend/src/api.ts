@@ -1,19 +1,21 @@
 import axios, { AxiosRequestHeaders } from "axios";
 
 const ENV_BASE = (import.meta as any).env.VITE_API_URL as string | undefined;
+const ENV_API_PORT = (import.meta as any).env.VITE_API_PORT as string | undefined;
 
 function resolveApiBase(): string {
-  const fallback = "http://localhost:8000";
+  const defaultPort = ENV_API_PORT ?? "8000";
+  const fallback = `http://localhost:${defaultPort}`;
   let base = ENV_BASE ?? fallback;
   if (typeof window !== "undefined") {
     const { protocol, hostname } = window.location;
     const isLocalHost = hostname === "localhost" || hostname === "127.0.0.1";
     const envPointsToLoopback = /(^|\/)localhost(?=[:/]|$)|(^|\/)127\.0\.0\.1(?=[:/]|$)/i.test(base);
     if (!isLocalHost && envPointsToLoopback) {
-      return `${protocol}//${hostname}:8000`;
+      return `${protocol}//${hostname}:${defaultPort}`;
     }
     if ((ENV_BASE ?? "").toLowerCase() === "auto") {
-      return `${protocol}//${hostname}:8000`;
+      return `${protocol}//${hostname}:${defaultPort}`;
     }
   }
   return base;

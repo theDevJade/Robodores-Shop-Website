@@ -5,16 +5,17 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile.dev
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    command: uvicorn app.main:app --host 0.0.0.0 --port ${BACKEND_PORT:-8000} --reload
     environment:
       SECRET_KEY: dev-secret
       DATABASE_URL: sqlite:///./robotics.db
       UPLOAD_ROOT: /data/uploads
+      PORT: ${BACKEND_PORT:-8000}
     volumes:
       - ./backend:/app
       - backend_uploads:/data/uploads
     ports:
-      - "8000:8000"
+      - "${BACKEND_PORT:-8000}:${BACKEND_PORT:-8000}"
 
   frontend:
     build:
@@ -22,12 +23,14 @@ services:
       dockerfile: Dockerfile.dev
     environment:
       VITE_API_URL: auto
-    command: npm run dev -- --host 0.0.0.0 --port 5173
+      VITE_API_PORT: ${BACKEND_PORT:-8000}
+      PORT: ${FRONTEND_PORT:-5173}
+    command: npm run dev -- --host 0.0.0.0 --port ${FRONTEND_PORT:-5173}
     volumes:
       - ./frontend:/app
       - /app/node_modules
     ports:
-      - "5173:5173"
+      - "${FRONTEND_PORT:-5173}:${FRONTEND_PORT:-5173}"
     depends_on:
       - backend
 
