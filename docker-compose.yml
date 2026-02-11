@@ -26,6 +26,7 @@ services:
         VITE_API_PORT: ${BACKEND_PORT:-8000}
     environment:
       FRONTEND_PORT: ${FRONTEND_PORT:-5173}
+      BACKEND_PORT: ${BACKEND_PORT:-8000}
     ports:
       - "${FRONTEND_PORT:-5173}:${FRONTEND_PORT:-5173}"
     depends_on:

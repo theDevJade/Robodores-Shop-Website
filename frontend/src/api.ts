@@ -12,16 +12,15 @@ function resolveApiBase(): string {
     const isLocalHost = hostname === "localhost" || hostname === "127.0.0.1";
     const envPointsToLoopback = /(^|\/)localhost(?=[:/]|$)|(^|\/)127\.0\.0\.1(?=[:/]|$)/i.test(base);
 
-    // Behind a reverse proxy (Coolify, etc.): use same origin without port
-    // unless an explicit API port is configured
-    const apiPort = ENV_API_PORT || (isLocalHost ? defaultBackendPort : "");
-    const portSuffix = apiPort ? `:${apiPort}` : "";
-
-    if (!isLocalHost && envPointsToLoopback) {
-      return `${protocol}//${hostname}${portSuffix}`;
+    // On localhost, hit the backend port directly
+    if (isLocalHost) {
+      return `${protocol}//${hostname}:${defaultBackendPort}`;
     }
-    if ((ENV_BASE ?? "").toLowerCase() === "auto") {
-      return `${protocol}//${hostname}${portSuffix}`;
+
+    // Behind a reverse proxy (Coolify, etc.): use /api path on same origin.
+    // Nginx proxies /api/* to the backend, stripping the /api prefix.
+    if (envPointsToLoopback || (ENV_BASE ?? "").toLowerCase() === "auto") {
+      return `${protocol}//${hostname}${port ? `:${port}` : ""}/api`;
     }
   }
   return base;

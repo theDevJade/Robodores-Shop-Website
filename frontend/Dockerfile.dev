@@ -26,6 +26,7 @@ COPY --from=build /app/dist /usr/share/nginx/html
 COPY nginx.conf.template /etc/nginx/templates/default.conf.template
 
 ENV FRONTEND_PORT=5173
+ENV BACKEND_PORT=8000
 EXPOSE ${FRONTEND_PORT}
 
 # nginx:alpine image auto-runs envsubst on /etc/nginx/templates/*.template
